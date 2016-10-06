@@ -1,7 +1,9 @@
 local deftest = require "deftest.deftest"
 local test_http = require "test.test_http"
 local test_vmath = require "test.test_vmath"
+local telescope_syntax = require "test.telescope_syntax"
 
 function init(self)
-	deftest.test(test_http, test_vmath)
+	deftest.add(test_http, test_vmath, telescope_syntax)
+	deftest.run()
 end

@@ -1,17 +1,40 @@
+--- Wrapper for unit tests run using the Telescope (https://github.com/norman/telescope)
+-- unit testing framework.
+-- Tests are run from within coroutine which allows for async
+-- tests to be written (refer to the http test for an example).
+--
+-- @usage
+--
+--	local deftest = require "deftest.deftest"
+--	local some_tests = require "test.some_tests"
+--	local other_tests = require "test.other_tests"
+--
+--	function init(self)
+--		deftest.add(some_tests, other_tests)
+--		deftest.run()
+--	end
+--
+
 local telescope = require "deftest.telescope"
 
 local M = {}
 
+local contexts = {}
 
-function M.test(...)
+--- Add one or more sets of tests
+-- Each set of tests must be wrapped in a function
+function M.add(...)
 	local args = {...}
+	for _,test in ipairs(args) do
+		telescope.load_contexts(test, contexts)
+	end
+end
 
+--- Run all tests added via @{add}
+-- The engine will shut down with an exit code indicating success or
+-- failure and the test reports will be written to console. 
+function M.run()
 	local co = coroutine.create(function()
-		local contexts = {}
-		for _,test in ipairs(args) do
-			telescope.load_contexts(test, contexts)
-		end
-	
 		local callbacks = {}
 		local test_pattern = nil
 		local results = telescope.run(contexts, callbacks, test_pattern)
