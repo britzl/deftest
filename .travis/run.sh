@@ -8,9 +8,17 @@ echo $SHA1
 
 DMENGINE_URL="http://d.defold.com/archive/${SHA1}/engine/linux/dmengine_headless"
 BOB_URL="http://d.defold.com/archive/${SHA1}/bob/bob.jar"
-echo "Downloading ${DMENGINE_URL} and ${BOB_URL}"
 
+echo "Downloading ${DMENGINE_URL}"
 curl -o dmengine_headless ${DMENGINE_URL}
+
+echo "Downloading ${BOB_URL}"
 curl -o bob.jar ${BOB_URL}
+
+ls -la
+
+echo "Running bob.jar"
 java -jar bob.jar --debug build
+
+echo "Starting dmengine_headless"
 dmengine_headless
