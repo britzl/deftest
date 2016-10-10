@@ -4,6 +4,8 @@ local test_vmath = require "test.test_vmath"
 local telescope_syntax = require "test.telescope_syntax"
 
 function init(self)
-	deftest.add(test_http, test_vmath, telescope_syntax)
+	deftest.add(test_http)
+	deftest.add(test_vmath)
+	deftest.add(telescope_syntax)
 	deftest.run()
 end
