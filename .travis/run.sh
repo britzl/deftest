@@ -22,4 +22,6 @@ echo "Running bob.jar"
 java -jar bob.jar --debug build
 
 echo "Starting dmengine_headless"
+ls -la
 ./dmengine_headless
+dmengine_headless
