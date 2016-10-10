@@ -11,6 +11,7 @@ BOB_URL="http://d.defold.com/archive/${SHA1}/bob/bob.jar"
 
 echo "Downloading ${DMENGINE_URL}"
 curl -o dmengine_headless ${DMENGINE_URL}
+chmod +x dmengine_headless
 
 echo "Downloading ${BOB_URL}"
 curl -o bob.jar ${BOB_URL}
@@ -21,4 +22,4 @@ echo "Running bob.jar"
 java -jar bob.jar --debug build
 
 echo "Starting dmengine_headless"
-dmengine_headless
+./dmengine_headless
