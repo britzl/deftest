@@ -17,16 +17,8 @@ chmod +x dmengine_headless
 echo "Downloading ${BOB_URL}"
 curl -o bob.jar ${BOB_URL}
 
-ls -la
-
 echo "Running bob.jar"
 java -jar bob.jar --debug build
 
 echo "Starting dmengine_headless"
-ls -la
-pwd
 ./dmengine_headless
-dmengine_headless
-${TRAVIS_BUILD_DIR}/dmengine_headless
-FOO=$(pwd)
-${FOO}/dmengine_headless
