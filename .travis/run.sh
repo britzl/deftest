@@ -6,7 +6,8 @@
 SHA1=$(curl -s http://d.defold.com/stable/info.json | sed 's/.*sha1": "\(.*\)".*/\1/')
 echo $SHA1
 
-DMENGINE_URL="http://d.defold.com/archive/${SHA1}/engine/linux/dmengine_headless"
+#DMENGINE_URL="http://d.defold.com/archive/${SHA1}/engine/linux/dmengine_headless"
+DMENGINE_URL="http://d.defold.com/archive/${SHA1}/engine/x86_64-linux/dmengine_headless"
 BOB_URL="http://d.defold.com/archive/${SHA1}/bob/bob.jar"
 
 echo "Downloading ${DMENGINE_URL}"
