@@ -50,12 +50,15 @@ The real power of unit tests is as we have learned when the tests can be automat
 
 The tests for this project can either be executed from within Defold or through the [run.sh](https://github.com/britzl/deftest/blob/master/.test/run.sh) script from the command line. The script will download the latest headless version of the Defold engine and the command line build tool (bob.jar), build the project and run the tests.
 
-# Using Travis-CI
+### Using Travis-CI
 The tests in this project are run on [Travis-CI](https://travis-ci.org/britzl/deftest). The configuration can be seen in the [.travis.yml](https://github.com/britzl/deftest/blob/master/.travis.yml) file while the bulk of the work is done in the run.sh script.
 
 [![Travis-CI](https://travis-ci.org/britzl/deftest.svg?branch=master)]((https://travis-ci.org/britzl/deftest))
 
-# Using Circle-CI
+### Using Circle-CI
 The tests in this project are run on [Circle-CI](https://circleci.com/gh/britzl/deftest). The configuration can be seen in the [circle.yml](https://github.com/britzl/deftest/blob/master/circle.yml) file while the bulk of the work is done in the run.sh script
 
 [![CircleCI](https://circleci.com/gh/britzl/deftest.svg?style=svg)](https://circleci.com/gh/britzl/deftest)
+
+## Limitations
+Unit testing in Defold works best when testing Lua modules containing pure logic. Testing script and gui_script files is more related to integration tests as it not only involves your code, but also visual components and interaction between the different game objects and the systems provided by the engine. If your scripts contains complex code that you wish to test it is recommended to move the code to a Lua module and test just that module.
