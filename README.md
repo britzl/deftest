@@ -43,7 +43,7 @@ And a Lua file containing some tests:
 		end)
 	end
 
-More examples of the Telescope test syntax can be seen in [telescope_syntax.lua](https://github.com/britzl/deftest/blob/master/test/telescope_syntax.lua)
+More examples of the Telescope test syntax can be seen in [telescope_syntax.lua](https://github.com/britzl/deftest/blob/master/test/telescope_syntax.lua) and a full example of how to setup and run tests can be seen [in the test folder](https://github.com/britzl/deftest/tree/master/test).
 
 ## Running tests from a CI system
 The real power of unit tests is as we have learned when the tests can be automated and run for every change made to the code. There are many CI systems available and this project will also show how to integrate with some of the more popular CI systems out there. The main idea is to configure a physical or virtual machine so that tests can be run frequently and with predictable results every time. Once the configuration of the machine is complete a script of some kind executes the tests and depending on the outcome different actions are taken. Failed tests could perhaps trigger e-mail notifications to team members or a dashboard display to light up while successful tests could trigger a build of binaries based on the tested code.
@@ -53,7 +53,7 @@ The tests for this project can either be executed from within Defold or through 
 # Using Travis-CI
 The tests in this project are run on [Travis-CI](https://travis-ci.org/britzl/deftest). The configuration can be seen in the [.travis.yml](https://github.com/britzl/deftest/blob/master/.travis.yml) file while the bulk of the work is done in the run.sh script.
 
-![Travis-CI](https://travis-ci.org/britzl/deftest.svg?branch=master)
+[![Travis-CI](https://travis-ci.org/britzl/deftest.svg?branch=master)]((https://travis-ci.org/britzl/deftest))
 
 # Using Circle-CI
 The tests in this project are run on [Circle-CI](https://circleci.com/gh/britzl/deftest). The configuration can be seen in the [circle.yml](https://github.com/britzl/deftest/blob/master/circle.yml) file while the bulk of the work is done in the run.sh script
