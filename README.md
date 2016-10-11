@@ -1,5 +1,5 @@
 # DefTest
-Unit testing is a software development process in which the smallest testable parts of the code are individually and independently tested. The purpose is to verify an expected and defined behavior in one part of the code as another part of it is changed to guarantee that it still behaves as expected even after the change. Being able to catch unforeseen side effects (read bugs) early reduces the effort and cost involved in fixing them. Unit tests can be run manually but it is more common to automate the process, typically as a reaction to new code being added to a version control system such as Git.
+Unit testing is a software development process in which the smallest testable parts of the code are individually and independently tested. The purpose is to verify an expected and defined behavior in one part of the code as another part of it is changed to guarantee that it still behaves as expected even after the change. Being able to catch unforeseen side effects (read: bugs) early reduces the effort and cost involved in fixing them. Unit tests can be run manually but it is more common to automate the process, typically when new code is added to a version control system such as Git. This process is also known as [Continuous Integration, or CI](https://www.wikiwand.com/en/Continuous_integration) since the local changes are integrated into a shared repository, often several times a day.
 
 This project shows one way of running unit tests in Defold using the [Telescope](https://github.com/norman/telescope) unit testing framework. Telescope was chosen thanks to it's simplicity and clean code. A couple of other popular unit testing frameworks are:
 
@@ -26,5 +26,12 @@ It is recommended to run your unit tests from its own collection, set as the boo
 	end
 
 ## Running tests from a CI system
+The real power of unit tests is as we have learned when the tests can be automated and run for every change made to the code. There are many CI systems available and this project will also show how to integrate with some of the more popular CI systems out there. The main idea is to configure a physical or virtual machine so that tests can be run frequently and with predictable results every time. Once the configuration of the machine is complete a script of some kind executes the tests and depending on the outcome different actions are taken. Failed tests could perhaps trigger e-mail notifications to team members or a dashboard display to light up while successful tests could trigger a build of binaries based on the tested code.
+
+The tests for this project can either be executed from within Defold or through the [run.sh](https://github.com/britzl/deftest/blob/master/.test/run.sh) script from the command line. The script will download the latest headless version of the Defold engine and the command line build tool (bob.jar), build the project and run the tests.
+
 # Using Travis-CI
-This project runs the example tests on [Travis-CI](https://travis-ci.org/britzl/deftest). The configuration can be seen in the [.travis.yml](https://github.com/britzl/deftest/blob/master/.travis.yml) file and the bulk of the work is done in the [run.sh](https://github.com/britzl/deftest/blob/master/.travis/run.sh) script. The run.sh script will download the latest headless version of the Defold engine and the command line build tool (bob.jar), build the project and run the tests.
+The tests in this project are run on [Travis-CI](https://travis-ci.org/britzl/deftest). The configuration can be seen in the [.travis.yml](https://github.com/britzl/deftest/blob/master/.travis.yml) file while the bulk of the work is done in the run.sh script.
+
+# Using Circle-CI
+The tests in this project are run on [Circle-CI](https://circleci.com/gh/britzl/deftest). The configuration can be seen in the [circle.yml](https://github.com/britzl/deftest/blob/master/circle.yml) file while the bulk of the work is done in the run.sh script
