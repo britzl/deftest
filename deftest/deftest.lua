@@ -15,6 +15,7 @@
 --	end
 --
 
+require "deftest.coxpcall"
 local telescope = require "deftest.telescope"
 
 local M = {}
