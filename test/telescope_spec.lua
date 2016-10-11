@@ -1,0 +1,98 @@
+return function()
+	local telescope = require "deftest.telescope"
+	
+	describe("The Telescope Test Framework", function()
+	
+		local contexts
+	
+		context("The Telescope module", function()
+			it("should have a 'version' member", function()
+				assert_equal("string", type(telescope.version))
+			end)
+			it("should have a '_VERSION' member", function()
+				assert_equal("string", type(telescope._VERSION))
+			end)
+		end)
+	
+		context("Telescope's syntax", function()
+	
+			before(function()
+				local syntax = require "test.telescope_syntax"
+				contexts = telescope.load_contexts(syntax)
+			end)
+	
+			context("contexts and tests", function()
+	
+				it("should have names", function()
+					assert_equal("A context", contexts[1].name)
+					assert_equal("A passing test", contexts[3].name)
+				end)
+	
+				it("should have parents", function()
+					for i, c in ipairs(contexts) do
+						assert_gte(c.parent, 0)
+					end
+				end)
+	
+				it("should have a parent of 0 when at the top level", function()
+					assert_equal("A context", contexts[1].name)
+					assert_equal(0, contexts[1].parent)
+					assert_equal("A test in the top level", contexts[9].name)
+					assert_equal(0, contexts[9].parent)
+				end)
+	
+			end)
+	
+			context("contexts", function()
+	
+				it("can have contexts as children", function()
+					assert_equal("A nested context", contexts[2].name)
+					assert_equal(1, contexts[2].parent)
+				end)
+	
+				it("can have tests as children", function()
+					assert_equal("A nested context", contexts[3].context_name)
+					assert_equal("A passing test", contexts[3].name)
+				end)
+	
+				it("can have a 'before' function", function()
+					assert_type(contexts[1].before, "function")
+				end)
+	
+				it("can have an 'after' function", function()
+					assert_type(contexts[1].after, "function")
+				end)
+	
+			end)
+	
+			context("tests", function()
+	
+				it("when pending, should have true for the 'test' field", function()
+					assert_equal("A pending test", contexts[7].name)
+					assert_true(contexts[7].test)
+				end)
+	
+				it("when non-pending, should have a function for the 'test' field", function()
+					assert_equal("A test that causes an error", contexts[6].name)
+					assert_equal("function", type(contexts[6].test))
+				end)
+	
+			end)
+	
+			context("load_context", function()
+	
+				it("should accept a function or a path to a module", function()
+					local syntax = require "test.telescope_syntax"
+					contexts = telescope.load_contexts(syntax)
+					-- We don't need to validate the entire thing, that's done in Syntax.
+					-- Just make sure that the result is a context.
+					assert_equal("A context", contexts[1].name)
+					assert_equal("A passing test", contexts[3].name)
+				end)
+	
+			end)
+	
+		end)
+	
+	end)
+end
