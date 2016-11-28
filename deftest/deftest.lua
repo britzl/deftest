@@ -42,9 +42,25 @@ function M.run()
 		local summary, data = telescope.summary_report(contexts, results)
 		local test_report = telescope.test_report(contexts, results)
 		local error_report = telescope.error_report(contexts, results)
+		print("")
+		print("--- SUMMARY -----------------------")
 		print(summary)
-		print(test_report)
-		print(error_report)
+
+		print("")
+		print("--- TEST REPORT -------------------")
+		for line in test_report:gmatch("[^\r\n]+") do
+			print(line)
+		end
+
+		print("")
+		print("--- ERROR REPORT ------------------")
+		if not error_report then
+			print("0 errors")
+		else
+			for line in error_report:gmatch("[^\r\n]+") do
+				print(line)
+			end
+		end
 	
 		for _, v in pairs(results) do
 			if v.status_code == telescope.status_codes.err or
