@@ -1,7 +1,7 @@
 return function()
-	local mock_fs = require "deftest.mock_fs"
+	local mock_fs = require "deftest.mock.fs"
 	
-	describe("mock_fs", function()
+	describe("mock.fs", function()
 		before(function()
 			mock_fs.mock()
 		end)
