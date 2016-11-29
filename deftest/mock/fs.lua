@@ -5,6 +5,7 @@ local M = {}
 local files = {}
 
 local fail_file_operations = false
+local fail_write_operations = false
 
 --- from http://lua-users.org/wiki/CopyTable
 local function deepcopy(orig)
@@ -102,6 +103,7 @@ function M.mock()
 		file.write = function(self, ...)
 			assert(not closed, "attempt to use a closed file")
 			assert(not fail_file_operations, "io error")
+			assert(not fail_write_operations, "io error")
 			if mode == "r" then
 				return nil, "Bad file descriptor"
 			end
@@ -296,6 +298,8 @@ function M.mock()
 end
 
 function M.unmock()
+	fail_file_operations = false
+	fail_write_operations = false
 	mock.unmock(sys)
 	mock.unmock(io)
 	mock.unmock(os)
@@ -304,6 +308,10 @@ end
 
 function M.has_file(file)
 	return files[file] ~= nil
+end
+
+function M.get_file(file)
+	return files[file]
 end
 
 function M.set_file(file, content)
@@ -316,6 +324,14 @@ end
 
 function M.success()
 	fail_file_operations = false
+end
+
+function M.fail_writes(fail)
+	fail_write_operations = fail
+end
+
+function M.files()
+	return files
 end
 
 return M
