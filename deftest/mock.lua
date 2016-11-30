@@ -53,6 +53,7 @@ local mock = {}
 -- mock.unmock(x)
 --
 function mock.mock(module)
+	assert(module, "You must provide a module to mock")
 	for k,v in pairs(module) do
 		if type(v) == "function" then
 			local mock_fn = {
@@ -62,8 +63,15 @@ function mock.mock(module)
 				orig_fn = v,
 				params = {}
 			}
-			function mock_fn.returns(answers)
-				mock_fn.answers = answers
+			function mock_fn.returns(...)
+				local arg_length = select("#", ...)
+				assert(arg_length > 0, "You must provide some answers")
+				local args = { ... }
+				if arg_length == 1 then
+					mock_fn.answers = args[1]
+				else
+					mock_fn.answers = args
+				end
 			end
 			function mock_fn.always_returns(answer)
 				mock_fn.repl_fn = function()
@@ -110,6 +118,7 @@ end
 --- Remove the mocking capabilities from a module.
 -- @param module module to remove mocking from
 function mock.unmock(module)
+	assert(module, "You must provide a module to unmock")
 	for k,v in pairs(module) do
 		if type(v) == "table" then
 			if v.orig_fn then

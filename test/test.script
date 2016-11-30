@@ -1,9 +1,12 @@
 local deftest = require "deftest.deftest"
+
 local test_http = require "test.test_http"
 local test_vmath = require "test.test_vmath"
 local test_mock_fs = require "test.test_mock_fs"
 local test_mock_time = require "test.test_mock_time"
+local test_mock = require "test.test_mock"
 local telescope_spec = require "test.telescope_spec"
+
 
 function init(self)
 	deftest.add(test_http)
@@ -11,5 +14,6 @@ function init(self)
 	deftest.add(telescope_spec)
 	deftest.add(test_mock_fs)
 	deftest.add(test_mock_time)
+	deftest.add(test_mock)
 	deftest.run()
 end
