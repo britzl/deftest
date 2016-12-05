@@ -35,6 +35,7 @@ function M.mock()
 	end)
 	sys.save.replace(function (file, t)
 		files[file] = deepcopy(t)
+		return true
 	end)
 
 	local tmpfile_count = 0
