@@ -1,3 +1,5 @@
+![](logo.jpg)
+
 # DefTest
 Unit testing is a software development process in which the smallest testable parts of the code are individually and independently tested. The purpose is to verify an expected and defined behavior in one part of the code as another part of it is changed to guarantee that it still behaves as expected even after the change. Being able to catch unforeseen side effects (read: bugs) early reduces the effort and cost involved in fixing them. Unit tests can be run manually but it is more common to automate the process, typically when new code is added to a version control system such as Git. This process is also known as [Continuous Integration, or CI](https://www.wikiwand.com/en/Continuous_integration) since the local changes are integrated into a shared repository, often several times a day.
 
