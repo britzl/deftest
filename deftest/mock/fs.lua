@@ -1,4 +1,4 @@
-local mock = require "deftest.mock"
+local mock = require "deftest.mock.mock"
 
 local M = {}
 
@@ -73,7 +73,7 @@ function M.mock()
 		if fail_file_operations then
 			return nil, "Unable to open file"
 		end
-		
+
 		local closed = false
 		local mode = mode
 		local file_position = 1
@@ -83,7 +83,7 @@ function M.mock()
 
 		mode = mode or "r"
 		mode = mode:gsub("b", "")
-		
+
 		if mode == "w" then
 			files[filename] = ""
 		elseif mode == "w+" then
@@ -116,10 +116,10 @@ function M.mock()
 				local s = tostring(data)
 				local before = files[filename]:sub(1, file_position - 1)
 				local after = files[filename]:sub(file_position + #s) or ""
-				
+
 				files[filename] = before .. s .. after
 				file_position = file_position + #s
-				
+
 				-- this is a bit weird but it matches actual behavior
 				if mode == "a+" then
 					file_position = file_position - 1
@@ -139,11 +139,11 @@ function M.mock()
 			if mode == "w" or mode == "a" then
 				return nil, "Bad file descriptor"
 			end
-			
+
 			local function is_eof()
 				return file_position == #files[filename] + 1
 			end
-			
+
 			local formats = { ... }
 			if #formats == 0 then
 				formats[1] = "*l"

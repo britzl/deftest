@@ -15,7 +15,7 @@
 --	end
 --
 
-require "deftest.coxpcall"
+require "deftest.util.coxpcall"
 local telescope = require "deftest.telescope"
 
 local M = {}
@@ -33,7 +33,7 @@ end
 
 --- Run all tests added via @{add}
 -- The engine will shut down with an exit code indicating success or
--- failure and the test reports will be written to console. 
+-- failure and the test reports will be written to console.
 function M.run()
 	local co = coroutine.create(function()
 		local callbacks = {}
@@ -61,7 +61,7 @@ function M.run()
 				print(line)
 			end
 		end
-	
+
 		for _, v in pairs(results) do
 			if v.status_code == telescope.status_codes.err or
 				v.status_code == telescope.status_codes.fail then
@@ -70,7 +70,7 @@ function M.run()
 		end
 		os.exit(0)
 	end)
-	
+
 	local ok, message = coroutine.resume(co)
 	if not ok then
 		print("Something went wrong while running tests", message)

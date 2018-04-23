@@ -1,5 +1,5 @@
 return function()
-	local mock = require "deftest.mock"
+	local mock = require "deftest.mock.mock"
 	
 	local function get_mock_module()
 		return {
