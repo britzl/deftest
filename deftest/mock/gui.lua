@@ -29,9 +29,9 @@ local function new_node(id, node_type, x, y, z, w, h)
 end
 
 local function screen_position(node, position)
-	position = (position or vmath.vector3(0)) + node.position
+	local position = vmath.vector3(node.position)
 	if node.parent then
-		screen_position(node.parent, position)
+		position = position + screen_position(node.parent)
 	end
 	return position
 end
@@ -151,7 +151,7 @@ function M.mock()
 
 	gui.get_font.replace(get_font)
 	gui.get_text_metrics.replace(get_text_metrics)
-	
+
 	gui.reset_keyboard.replace(function() end)
 	gui.show_keyboard.replace(function() end)
 	gui.hide_keyboard.replace(function() end)
@@ -164,7 +164,7 @@ function M.mock()
 
 	gui.set_size.replace(set_size)
 	gui.get_size.replace(get_size)
-	
+
 	gui.new_box_node.replace(new_box_node)
 	gui.new_text_node.replace(new_text_node)
 end
