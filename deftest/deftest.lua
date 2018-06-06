@@ -18,6 +18,27 @@
 require "deftest.util.coxpcall"
 local telescope = require "deftest.telescope"
 
+local check = require "deftest.util.check"
+
+telescope.make_assertion(
+	"same",
+	function(_, ...) return telescope.assertion_message_prefix .. "all values to be the same" end,
+	function(...) return check.same(...) end
+)
+
+telescope.make_assertion(
+	"unique",
+	function(_, ...) return telescope.assertion_message_prefix .. "all values to be unique" end,
+	function(...) return check.unique(...) end
+)
+
+telescope.make_assertion(
+	"equal",
+	function(_, ...) return telescope.assertion_message_prefix .. "all values to be equal (using the equality operator)" end,
+	function(...) return check.equal(...) end
+)
+
+
 local M = {}
 
 local contexts = {}

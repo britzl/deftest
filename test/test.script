@@ -7,6 +7,7 @@ local test_mock_time = require "test.test_mock_time"
 local test_mock = require "test.test_mock"
 local test_unload = require "test.test_unload"
 local test_mock_gui = require "test.test_mock_gui"
+local test_check = require "test.test_check"
 local telescope_spec = require "test.telescope_spec"
 
 
@@ -19,5 +20,6 @@ function init(self)
 	deftest.add(test_mock)
 	deftest.add(test_unload)
 	deftest.add(test_mock_gui)
+	deftest.add(test_check)
 	deftest.run()
 end
