@@ -73,7 +73,7 @@ function M.equal(...)
 		for j = 1, length do
 			if i ~= j then
 				if args[i] ~= args[j] then
-					return false, ("Expected values '%s' and '%s' to be equal (using equality operator)"):format(args[i], args[j])
+					return false, ("Expected values '%s' and '%s' to be equal (using equality operator)"):format(tostring(args[i]), tostring(args[j]))
 				end
 			end
 		end
