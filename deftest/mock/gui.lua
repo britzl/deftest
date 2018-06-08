@@ -120,6 +120,14 @@ local function get_size(node)
 	return vmath.vector3(node.size)
 end
 
+local function set_scale(node, scale)
+	node.scale = scale
+end
+
+local function get_scale(node)
+	return node.scale
+end
+
 local function new_box_node(pos, size)
 	instance_count = instance_count + 1
 	local node = new_node("instance" .. tostring(instance_count), "box", pos.x, pos.y, pos.z, size.x, size.y)
@@ -165,6 +173,9 @@ function M.mock()
 	gui.set_size.replace(set_size)
 	gui.get_size.replace(get_size)
 
+	gui.set_scale.replace(set_scale)
+	gui.get_scale.replace(get_scale)
+	
 	gui.new_box_node.replace(new_box_node)
 	gui.new_text_node.replace(new_text_node)
 end
