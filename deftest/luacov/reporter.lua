@@ -156,12 +156,7 @@ end
 
 -- luacheck: pop
 
-local cluacov_ok = pcall(require, "cluacov.version")
 local deepactivelines
-
-if cluacov_ok then
-   deepactivelines = require("cluacov.deepactivelines")
-end
 
 function ReporterBase:_run_file(filename)
    local file, open_err = io.open(filename)
