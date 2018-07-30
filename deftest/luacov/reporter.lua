@@ -23,7 +23,7 @@ local ReporterBase = {} do
 ReporterBase.__index = ReporterBase
 
 function ReporterBase:new(conf)
-   local stats = require("luacov.stats")
+   local stats = require("deftest.luacov.stats")
    local data = stats.load(conf.statsfile)
 
    if not data then

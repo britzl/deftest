@@ -1,1 +1,1 @@
-return require "luacov.reporter"
+return require "deftest.luacov.reporter"
