@@ -14,7 +14,7 @@ local hook = require("luacov.hook")
 local reporter = require("luacov.reporter")
 runner.defaults = require("luacov.defaults")
 
-local debug = require("debug")
+local debug = _G.debug
 local raw_os_exit = os.exit
 
 local new_anchor = newproxy or function() return {} end -- luacheck: compat
