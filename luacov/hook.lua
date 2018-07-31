@@ -30,7 +30,8 @@ function hook.new(runner)
       elseif not runner.configuration.codefromstrings then
          -- Ignore Lua code loaded from raw strings by default.
          return
-      end
+    end
+    print(name)
 
       local data = runner.data
       local file = data[name]
