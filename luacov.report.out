@@ -1,0 +1,2510 @@
+==============================================================================
+deftest/deftest.lua
+==============================================================================
+        --- Wrapper for unit tests run using the Telescope (https://github.com/norman/telescope)
+        -- unit testing framework.
+        -- Tests are run from within coroutine which allows for async
+        -- tests to be written (refer to the http test for an example).
+        --
+        -- @usage
+        --
+        --	local deftest = require "deftest.deftest"
+        --	local some_tests = require "test.some_tests"
+        --	local other_tests = require "test.other_tests"
+        --
+        --	function init(self)
+        --		deftest.add(some_tests, other_tests)
+        --		deftest.run()
+        --	end
+        --
+
+        require "deftest.util.coxpcall"
+******0 local telescope = require "deftest.telescope"
+******0 local runner = require "luacov.runner"
+******0 local coverage_reporter = require "deftest.coverage.defoldreporter"
+
+******0 local check = require "deftest.util.check"
+
+******0 telescope.make_assertion(
+        	"same",
+     60 	function(_, ...) return telescope.assertion_message_prefix .. "all values to be the same" end,
+      2 	function(...) return check.same(...) end
+        )
+
+******0 telescope.make_assertion(
+        	"unique",
+     60 	function(_, ...) return telescope.assertion_message_prefix .. "all values to be unique" end,
+      2 	function(...) return check.unique(...) end
+        )
+
+******0 telescope.make_assertion(
+        	"equal",
+    587 	function(_, ...) return telescope.assertion_message_prefix .. "all values to be equal (using the equality operator)" end,
+     19 	function(...) return check.equal(...) end
+        )
+
+
+******0 local M = {}
+
+******0 local contexts = {}
+
+        --- Add one or more sets of tests
+        -- Each set of tests must be wrapped in a function
+******0 function M.add(...)
+******0 	local args = {...}
+******0 	for _,test in ipairs(args) do
+******0 		telescope.load_contexts(test, contexts)
+        	end
+        end
+
+        --- Run all tests added via @{add}
+        -- The engine will shut down with an exit code indicating success or
+        -- failure and the test reports will be written to console.
+******0 function M.run(options)
+******0 	options = options or {}
+******0 	print("Code coverage:", options.coverage and "enabled" or "disabled")
+******0 	if options.coverage then
+      2 		runner.init({
+      3 			codefromstrings = true,
+      2 			runreport = true,
+      2 			reporter = coverage_reporter,
+     64 		 })
+        	end
+     34 	local co = coroutine.create(function()
+     33 		local callbacks = {}
+     31 		local test_pattern = nil
+     31 		local results = telescope.run(contexts, callbacks, test_pattern)
+     30 		local summary, data = telescope.summary_report(contexts, results)
+     31 		local test_report = telescope.test_report(contexts, results)
+     31 		local error_report = telescope.error_report(contexts, results)
+    115 		print("")
+     85 		print("--- SUMMARY -----------------------")
+     30 		print(summary)
+
+   2467 		print("")
+   2438 		print("--- TEST REPORT -------------------")
+     86 		for line in test_report:gmatch("[^\r\n]+") do
+     85 			print(line)
+        		end
+
+     30 		print("")
+     30 		print("--- ERROR REPORT ------------------")
+      1 		if not error_report then
+      1 			print("0 errors")
+        		else
+     58 			for line in error_report:gmatch("[^\r\n]+") do
+     58 				print(line)
+        			end
+        		end
+
+   1742 		for _, v in pairs(results) do
+     59 			if v.status_code == telescope.status_codes.err or
+     59 				v.status_code == telescope.status_codes.fail then
+      1 				os.exit(1)
+        			end
+        		end
+      1 		os.exit(0)
+        	end)
+
+      2 	local ok, message = coroutine.resume(co)
+      1 	if not ok then
+******0 		print("Something went wrong while running tests", message)
+     31 		os.exit(1)
+        	end
+        end
+
+
+******0 return M
+
+==============================================================================
+deftest/mock/fs.lua
+==============================================================================
+******0 local mock = require "deftest.mock.mock"
+
+******0 local M = {}
+
+******0 local files = {}
+
+******0 local fail_file_operations = false
+******0 local fail_write_operations = false
+
+        --- from http://lua-users.org/wiki/CopyTable
+        local function deepcopy(orig)
+    256 	local orig_type = type(orig)
+        	local copy
+    256 	if orig_type == 'table' then
+     64 		copy = {}
+    128 		for orig_key, orig_value in next, orig, nil do
+    192 			copy[deepcopy(orig_key)] = deepcopy(orig_value)
+        		end
+    128 		setmetatable(copy, deepcopy(getmetatable(orig)))
+        	else -- number, string, boolean, etc
+    192 		copy = orig
+        	end
+    256 	return copy
+        end
+
+******0 function M.mock()
+    672 	mock.mock(sys)
+    672 	files = {}
+   1344 	sys.load.replace(function (file)
+     32 		local t = files[file]
+     32 		if not t then
+******0 			t = {}
+        		end
+     32 		return t
+        	end)
+   1344 	sys.save.replace(function (file, t)
+    128 		files[file] = deepcopy(t)
+     64 		return true
+        	end)
+
+    672 	local tmpfile_count = 0
+    672 	local output = nil
+        	local input = nil
+    672 	mock.mock(io)
+    672 	mock.mock(os)
+   1344 	os.remove.replace(function(filename)
+******0 		assert(not fail_file_operations, "os.remove error")
+******0 		assert(filename)
+******0 		if not files[filename] or fail_file_operations then
+******0 			return nil, ("%s: No such file or directory"):format(filename)
+        		end
+******0 		files[filename] = nil
+******0 		return true
+        	end)
+   1344 	os.rename.replace(function(oldname, newname)
+******0 		assert(not fail_file_operations, "os.rename error")
+******0 		assert(oldname and newname)
+******0 		if not files[oldname] or fail_file_operations then
+******0 			return nil, "No such file or directory"
+        		end
+******0 		files[newname] = files[oldname]
+******0 		files[oldname] = nil
+******0 		return true
+        	end)
+   1344 	os.tmpname.replace(function()
+    512 		tmpfile_count = tmpfile_count + 1
+    512 		local filename = "tmpfile" .. tostring(tmpfile_count) .. "_" .. tostring(socket.gettime())
+    512 		files[filename] = ""
+    512 		return filename
+        	end)
+   1344 	io.open.replace(function(filename, mode)
+    992 		assert(filename)
+    992 		if fail_file_operations then
+******0 			return nil, "Unable to open file"
+        		end
+
+    992 		local closed = false
+    992 		local mode = mode
+    992 		local file_position = 1
+    992 		local file = {
+******0 			type = "file"
+        		}
+
+    992 		mode = mode or "r"
+    992 		mode = mode:gsub("b", "")
+
+    992 		if mode == "w" then
+    448 			files[filename] = ""
+    544 		elseif mode == "w+" then
+******0 			files[filename] = ""
+    544 		elseif mode == "a" or mode == "a+" then
+     96 			files[filename] = files[filename] or ""
+     96 			file_position = 1 + #files[filename]
+    448 		elseif mode == "r" or mode == "r+" then
+    448 			if not files[filename] then
+     32 				return nil, filename .. ": No such file or directory"
+        			else
+    416 				files[filename] = files[filename]
+        			end
+        		else
+******0 			return nil, "Invalid mode"
+        		end
+
+        		file.write = function(self, ...)
+    512 			assert(not closed, "attempt to use a closed file")
+    512 			assert(not fail_file_operations, "io error")
+    512 			assert(not fail_write_operations, "io error")
+    512 			if mode == "r" then
+     32 				return nil, "Bad file descriptor"
+        			end
+    480 			local args = { ... }
+   1024 			for _,data in ipairs(args) do
+    544 				if mode == "a+" then
+     32 					file_position = 1 + #files[filename]
+        				end
+    544 				local s = tostring(data)
+    544 				local before = files[filename]:sub(1, file_position - 1)
+   1088 				local after = files[filename]:sub(file_position + #s) or ""
+
+    544 				files[filename] = before .. s .. after
+    544 				file_position = file_position + #s
+
+        				-- this is a bit weird but it matches actual behavior
+    544 				if mode == "a+" then
+     32 					file_position = file_position - 1
+        				end
+        			end
+    480 			return true
+        		end
+        		file.close = function()
+    576 			assert(not closed, "attempt to use a closed file")
+    576 			assert(not fail_file_operations, "io error")
+    576 			closed = true
+    576 			file.type = "closed file"
+        		end
+        		file.read = function(self, ...)
+    992 			assert(not closed, "attempt to use a closed file")
+    992 			assert(not fail_file_operations, "io error")
+    992 			if mode == "w" or mode == "a" then
+     64 				return nil, "Bad file descriptor"
+        			end
+
+        			local function is_eof()
+    864 				return file_position == #files[filename] + 1
+        			end
+
+    928 			local formats = { ... }
+    928 			if #formats == 0 then
+******0 				formats[1] = "*l"
+        			end
+    928 			local results = {}
+   1952 			for i=1,#formats do
+   1024 				local format = formats[i]
+   1024 				if format == "*n" then
+    384 					if is_eof() then
+     32 						results[i] = nil
+        					else
+    160 						local s = files[filename]:sub(file_position)
+    160 						local n = s:match("([-+]?%d+%.?%d*).*")
+    160 						if n then
+    160 							results[i] = tonumber(n)
+    160 							file_position = file_position + #n
+        						else
+******0 							results[i] = nil
+        						end
+        					end
+    832 				elseif format == "*a" then
+    768 					if is_eof() then
+******0 						results[i] = ""
+        					else
+    384 						local s = files[filename]:sub(file_position)
+    384 						results[i] = s
+    384 						file_position = #files[filename] + 1
+        					end
+    448 				elseif format == "*l" then
+    160 					local s = files[filename]:sub(file_position)
+    160 					local line = s:match("[^\r\n]+")
+    160 					if line then
+    128 						file_position = file_position + #line + 1 -- +1 = the linebreak
+        					end
+    160 					results[i] = line
+    288 				elseif type(format) == "number" then
+    288 					local length = format
+    288 					if length < 0 then
+******0 						results[i] = nil
+    576 					elseif is_eof() then
+     32 						results[i] = nil
+    256 					elseif length == 0 then
+******0 						results[i] = ""
+        					else
+    256 						local s = files[filename]:sub(file_position, file_position + length - 1)
+    256 						file_position = file_position + #s
+    256 						results[i] = s
+        					end
+        				else
+******0 					results[i] = nil
+        				end
+        			end
+    928 			return unpack(results)
+        		end
+        		file.flush = function()
+******0 			assert(not closed, "attempt to use a closed file")
+******0 			assert(not fail_file_operations, "io error")
+        		end
+        		file.lines = function()
+     32 			assert(not closed, "attempt to use a closed file")
+     32 			assert(not fail_file_operations, "io error")
+     32 			return files[filename]:gmatch("[^\r\n]+")
+        		end
+        		file.seek = function(self, whence, offset)
+    288 			whence = whence or "cur"
+    288 			offset = offset or 0
+    288 			if whence == "set" then
+    160 				if offset < 0 then
+******0 					return nil, "Invalid argument"
+        				end
+    160 				file_position = 1 + offset
+    160 				return offset
+    128 			elseif whence == "cur" then
+     96 				if file_position + offset < 1 then
+******0 					return nil, "Invalid argument"
+        				end
+     96 				file_position = file_position + offset
+     96 				return file_position
+     32 			elseif whence == "end" then
+     32 				file_position = 1 + #files[filename] + offset
+     32 				return file_position
+        			end
+        		end
+    960 		return file
+        	end)
+   1344 	io.type.replace(function(obj)
+     64 		return obj and obj.type or nil
+        	end)
+   1344 	io.write.replace(function(...)
+******0 		if not output then
+******0 			return
+        		end
+******0 		output.write(...)
+        	end)
+   1344 	io.read.replace(function(...)
+******0 		if not input then
+******0 			return
+        		end
+******0 		return input.read(...)
+        	end)
+   1344 	io.read.replace(function(...)
+******0 		if not input then return end
+******0 		return input.read(...)
+        	end)
+   1344 	io.output.replace(function(file)
+******0 		if not file then
+******0 			return output
+        		end
+******0 		if type(file) == "string" then
+******0 			output = io.open(file)
+        		else
+******0 			output = file
+        		end
+******0 		return output
+        	end)
+   1344 	io.input.replace(function(file)
+******0 		if not file then
+******0 			return input
+        		end
+******0 		if type(file) == "string" then
+******0 			input = io.open(file)
+        		else
+******0 			input = file
+        		end
+******0 		return input
+        	end)
+   1344 	io.flush.replace(function()
+******0 		if output then
+******0 			output.flush()
+        		end
+        	end)
+   1344 	io.close.replace(function(file)
+******0 		if file then
+******0 			file.close()
+******0 		elseif output then
+******0 			io.output().close()
+        		end
+        	end)
+   1344 	io.lines.replace(function(filename)
+******0 		if filename then
+******0 			local file = io.open(filename)
+******0 			return file.lines()
+******0 		elseif input then
+******0 			return io.input().lines()
+        		end
+        	end)
+   1344 	io.popen.replace(function(prog, mode)
+******0 		error("io.popen is not mockable")
+        	end)
+   1344 	io.tmpfile.replace(function()
+******0 		return io.open(os.tmpname())
+        	end)
+        end
+
+******0 function M.unmock()
+    672 	fail_file_operations = false
+    672 	fail_write_operations = false
+    672 	mock.unmock(sys)
+    672 	mock.unmock(io)
+    672 	mock.unmock(os)
+        end
+
+
+******0 function M.has_file(file)
+******0 	return files[file] ~= nil
+        end
+
+******0 function M.get_file(file)
+******0 	return files[file]
+        end
+
+******0 function M.set_file(file, content)
+******0 	files[file] = content
+        end
+
+******0 function M.fail()
+******0 	fail_file_operations = true
+        end
+
+******0 function M.success()
+******0 	fail_file_operations = false
+        end
+
+******0 function M.fail_writes(fail)
+******0 	fail_write_operations = fail
+        end
+
+******0 function M.files()
+******0 	return files
+        end
+
+******0 return M
+
+==============================================================================
+deftest/mock/gui.lua
+==============================================================================
+******0 local mock = require "deftest.mock.mock"
+
+******0 local M = {}
+
+******0 local instance_count = 0
+
+******0 local nodes = {}
+
+        local function ensure_hash(id)
+    899 	return type(id) == "string" and hash(id) or id
+        end
+
+        local function new_node(id, node_type, x, y, z, w, h)
+   1178 	id = ensure_hash(id)
+    589 	assert(not nodes[id])
+    589 	local node = {
+    589 		id = id,
+    589 		type = node_type,
+    589 		x = x, y = y, w = w, h = h,
+    589 		position = vmath.vector3(x, y, z),
+    589 		size = vmath.vector3(w or 1, h or 1, 0),
+    589 		scale = vmath.vector3(1, 1, 1),
+    589 		rotation = vmath.quat(),
+        		enabled = true,
+        		parent = nil,
+        	}
+    589 	nodes[id] = node
+    589 	return node
+        end
+
+        local function screen_position(node, position)
+     93 	local position = vmath.vector3(node.position)
+     93 	if node.parent then
+******0 		position = position + screen_position(node.parent)
+        	end
+     93 	return position
+        end
+
+        local function is_enabled(node)
+     93 	return node.enabled
+        end
+
+        local function get_node(id)
+    496 	id = ensure_hash(id)
+    248 	return nodes[id]
+        end
+
+        local function get_id(node)
+    372 	return node.id
+        end
+
+        local function set_id(node, id)
+     62 	nodes[node.id] = nil
+    124 	node.id = ensure_hash(id)
+     62 	nodes[node.id] = node
+        end
+
+        local function set_enabled(node, enabled)
+     62 	node.enabled = enabled
+        end
+
+        local function pick_node(node, x, y)
+     93 	local position = screen_position(node)
+     93 	return x >= position.x and y >= position.y and x <= (position.x + node.w) and y <= (position.y + node.h)
+        end
+
+        local function get_parent(node)
+     31 	return node.parent
+        end
+
+        local function set_parent(node, parent)
+    124 	node.parent = parent
+        end
+
+        local function get_font(node)
+******0 	return node.font
+        end
+
+        local function get_text_metrics(font, text, width, line_breaks, leading, tracking)
+******0 	return {
+        		width = width,
+        		height = 10,
+        		max_ascent = 8,
+        		max_descent = 2,
+        	}
+        end
+
+        local function set_text(node, text)
+******0 	assert(node.type == "text")
+******0 	node.text = text
+        end
+
+        local function get_text(node)
+******0 	assert(node.type == "text")
+******0 	return node.text
+        end
+
+        local function get_position(node)
+     62 	return vmath.vector3(node.position)
+        end
+
+        local function set_position(node, position)
+******0 	node.position = vmath.vector3(position)
+        end
+
+        local function delete_node(node)
+    124 	nodes[node.id] = nil
+    323 	for _,child in pairs(nodes) do
+    199 		if child.parent == node then
+     62 			delete_node(child)
+        		end
+        	end
+        end
+
+        local function set_size(node, size)
+     31 	node.size = vmath.vector3(size)
+        end
+
+        local function get_size(node)
+     93 	return vmath.vector3(node.size)
+        end
+
+        local function set_scale(node, scale)
+     31 	node.scale = scale
+        end
+
+        local function get_scale(node)
+     62 	return node.scale
+        end
+
+        local function new_box_node(pos, size)
+    589 	instance_count = instance_count + 1
+    589 	local node = new_node("instance" .. tostring(instance_count), "box", pos.x, pos.y, pos.z, size.x, size.y)
+    589 	return node
+        end
+
+        local function new_text_node(pos, text)
+******0 	instance_count = instance_count + 1
+******0 	local node = new_node("instance" .. tostring(instance_count), "text", pos.x, pos.y, pos.z, 0, 0)
+******0 	node.text = text
+******0 	node.font = hash("font")
+******0 	return node
+        end
+
+******0 function M.mock()
+    341 	mock.mock(gui)
+    341 	gui.get_node.replace(get_node)
+    341 	gui.get_id.replace(get_id)
+    341 	gui.set_id.replace(set_id)
+
+    341 	gui.is_enabled.replace(is_enabled)
+    341 	gui.set_enabled.replace(set_enabled)
+    341 	gui.delete_node.replace(delete_node)
+
+    341 	gui.pick_node.replace(pick_node)
+
+    341 	gui.get_parent.replace(get_parent)
+    341 	gui.set_parent.replace(set_parent)
+
+    341 	gui.get_font.replace(get_font)
+    341 	gui.get_text_metrics.replace(get_text_metrics)
+
+    341 	gui.reset_keyboard.replace(function() end)
+    341 	gui.show_keyboard.replace(function() end)
+    341 	gui.hide_keyboard.replace(function() end)
+
+    341 	gui.set_text.replace(set_text)
+    341 	gui.get_text.replace(get_text)
+
+    341 	gui.get_position.replace(get_position)
+    341 	gui.set_position.replace(set_position)
+
+    341 	gui.set_size.replace(set_size)
+    341 	gui.get_size.replace(get_size)
+
+    341 	gui.set_scale.replace(set_scale)
+    341 	gui.get_scale.replace(get_scale)
+        	
+    341 	gui.new_box_node.replace(new_box_node)
+    341 	gui.new_text_node.replace(new_text_node)
+        end
+
+******0 function M.unmock()
+    341 	mock.unmock(gui)
+    341 	nodes = {}
+        end
+
+******0 function M.add_box(id, x, y, w, h)
+******0 	return new_node(id, "box", x, y, 0, w, h)
+        end
+
+******0 function M.add_text(id, x, y, w, h)
+******0 	local node = new_node(id, "text", x, y, 0, w, h)
+******0 	node.text = ""
+******0 	node.font = hash("font")
+******0 	return node
+        end
+
+******0 return M
+
+==============================================================================
+deftest/mock/mock.lua
+==============================================================================
+        --- Provides the ability to mock any module.
+
+        -- @usage
+        --
+        -- mock.mock(sys)
+        --
+        -- -- specifying return values
+        -- sys.get_sys_info.returns({my_data})
+        -- ...
+        -- local sys_info = sys.get_sys_info() -- will be my_data
+        -- assert(sys.get_sys_info.calls == 1) -- call counting
+        -- ...
+        -- local sys_info = sys.get_sys_info() -- original response as we are now out of mocked answers
+        -- assert(sys.get_sys_info.calls == 2) -- call counting
+        -- ...
+        --
+        -- -- specifying a replacement function
+        -- sys.get_sys_info.replace(function () return my_data end)
+        --
+        -- ...
+        -- local sys_info = sys.get_sys_info() -- will be my_data
+        -- assert(sys.get_sys_info.calls == 3) -- call counting
+        -- ...
+        -- local sys_info = sys.get_sys_info() -- will still be my_data
+        -- assert(sys.get_sys_info.calls == 4) -- call counting
+        -- ...
+        --
+        -- -- cleaning up
+        -- mock.unmock(sys) -- restore the sys library again
+
+******0 local mock = {}
+
+        --- Mock the specified module.
+        -- Mocking the module extends the functions it contains with the ability to have their logic overridden.
+        -- @param module module to mock
+        -- @usage
+        --
+        -- -- mock module x
+        -- mock.mock(x)
+        --
+        -- -- make x.f return 1, 2 then the original value
+        -- x.f.returns({1, 2})
+        -- print(x.f()) -- prints 1
+        --
+        -- -- make x.f return 1 forever
+        -- x.f.replace(function () return 1 end)
+        -- while true do print(x.f()) end -- prints 1 forever
+        --
+        -- -- counting calls
+        -- assert(x.f.calls > 0)
+        --
+        -- -- return to original state of module x
+        -- mock.unmock(x)
+        --
+******0 function mock.mock(module)
+   2762 	assert(module, "You must provide a module to mock")
+ 103314 	for k,v in pairs(module) do
+ 100552 		if type(v) == "function" then
+  63529 			local mock_fn = {
+        				calls = 0,
+  63529 				answers = {},
+        				repl_fn = nil,
+  63529 				orig_fn = v,
+  63529 				params = {}
+        			}
+  63529 			function mock_fn.returns(...)
+     62 				local arg_length = select("#", ...)
+     62 				assert(arg_length > 0, "You must provide some answers")
+     62 				local args = { ... }
+     62 				if arg_length == 1 then
+     31 					mock_fn.answers = args[1]
+        				else
+     31 					mock_fn.answers = args
+        				end
+        			end
+  63529 			function mock_fn.always_returns(answer)
+     62 				mock_fn.repl_fn = function()
+   6200 					return answer
+        				end
+        			end
+  63529 			function mock_fn.replace(repl_fn)
+  20014 				mock_fn.repl_fn = repl_fn
+        			end
+  63529 			function mock_fn.original(...)
+    374 				return mock_fn.orig_fn(...)
+        			end
+  63529 			function mock_fn.restore()
+     31 				mock_fn.repl_fn = nil
+        			end
+  63529 			local mt = {
+        				__call = function (mock_fn, ...)
+  10999 					mock_fn.calls = mock_fn.calls + 1
+  10999 					local arg = {...}
+
+  10999 					if #arg > 0 then
+   8475 						for i=1,#arg do
+   5308 							mock_fn.params[i] = arg[i]
+        						end
+        					end
+
+  10999 					if mock_fn.answers[1] then
+    186 						local result = mock_fn.answers[1]
+    186 						table.remove(mock_fn.answers, 1)
+    186 						return result
+  10813 					elseif mock_fn.repl_fn then
+  10533 						return mock_fn.repl_fn(...)
+        					else
+    280 						return v(...)
+        					end
+        				end
+        			}
+  63529 			setmetatable(mock_fn, mt)
+  63529 			module[k] = mock_fn
+        		end
+        	end
+        end
+
+        --- Remove the mocking capabilities from a module.
+        -- @param module module to remove mocking from
+******0 function mock.unmock(module)
+   2667 	assert(module, "You must provide a module to unmock")
+ 102914 	for k,v in pairs(module) do
+ 100247 		if type(v) == "table" then
+  63413 			if v.orig_fn then
+  63320 				module[k] = v.orig_fn
+        			end
+        		end
+        	end
+        end
+
+******0 return mock
+
+==============================================================================
+deftest/mock/time.lua
+==============================================================================
+******0 local mock = require "deftest.mock.mock"
+
+******0 local M = {}
+
+        local mock_time = nil
+
+******0 function M.mock()
+     94 	mock.mock(os)
+     94 	mock.mock(socket)
+
+    188 	mock_time = socket.gettime.original()
+    188 	os.time.replace(function()
+    156 		if not mock_time then
+******0 			return os.time.original()
+        		end
+    156 		return math.floor(mock_time)
+        	end)
+    188 	os.date.replace(function(format, time)
+    156 		if not mock_time then
+******0 			return os.date.original(format, time)
+        		end
+    156 		return os.date.original(format, time or mock_time)
+        	end)
+    188 	socket.gettime.replace(function()
+    156 		if not mock_time then
+******0 			return os.time.original()
+        		end
+    156 		return mock_time
+        	end)
+        end
+
+******0 function M.unmock()
+     93 	mock_time = nil
+     93 	mock.unmock(os)
+     93 	mock.unmock(socket)
+        end
+
+
+******0 function M.set(time)
+     62 	if not time then
+******0 		time = socket.gettime.original()
+        	end
+     62 	mock_time = time
+        end
+
+******0 function M.elapse(seconds)
+     31 	assert(seconds, "You must provide the number of seconds to elapse time with")
+     31 	mock_time = mock_time + seconds
+        end
+
+******0 return M
+
+==============================================================================
+deftest/telescope.lua
+==============================================================================
+        --- Telescope is a test library for Lua that allows for flexible, declarative
+        -- tests. The documentation produced here is intended largely for developers
+        -- working on Telescope.  For information on using Telescope, please visit the
+        -- project homepage at: <a href="http://github.com/norman/telescope">http://github.com/norman/telescope#readme</a>.
+        -- @release 0.6
+        -- @class module
+        -- @module 'telescope'
+******0 local _M = {}
+
+******0 local setfenv = _G.setfenv
+
+
+******0 local _VERSION = "0.6.0"
+
+        --- The status codes that can be returned by an invoked test. These should not be overidden.
+        -- @name status_codes
+        -- @class table
+        -- @field err - This is returned when an invoked test results in an error
+        -- rather than a passed or failed assertion.
+        -- @field fail - This is returned when an invoked test contains one or more failing assertions.
+        -- @field pass - This is returned when all of a test's assertions pass.
+        -- @field pending - This is returned when a test does not have a corresponding function.
+        -- @field unassertive - This is returned when an invoked test does not produce
+        -- errors, but does not contain any assertions.
+******0 local status_codes = {
+          err         = 2,
+          fail        = 4,
+          pass        = 8,
+          pending     = 16,
+******0   unassertive = 32
+        }
+
+        --- Labels used to show the various <tt>status_codes</tt> as a single character.
+        -- These can be overidden if you wish.
+        -- @name status_labels
+        -- @class table
+        -- @see status_codes
+        -- @field status_codes.err         'E'
+        -- @field status_codes.fail        'F'
+        -- @field status_codes.pass        'P'
+        -- @field status_codes.pending     '?'
+        -- @field status_codes.unassertive 'U'
+
+******0 local status_labels = {
+******0   [status_codes.err]         = 'E',
+******0   [status_codes.fail]        = 'F',
+******0   [status_codes.pass]        = 'P',
+******0   [status_codes.pending]     = '?',
+******0   [status_codes.unassertive] = 'U'
+        }
+
+        --- The default names for context blocks. It defaults to "context", "spec" and
+        -- "describe."
+        -- @name context_aliases
+        -- @class table
+******0 local context_aliases = {"context", "describe", "spec"}
+        --- The default names for test blocks. It defaults to "test," "it", "expect",
+        -- "they" and "should."
+        -- @name test_aliases
+        -- @class table
+******0 local test_aliases    = {"test", "it", "expect", "should", "they"}
+
+        --- The default names for "before" blocks. It defaults to "before" and "setup."
+        -- The function in the before block will be run before each sibling test function
+        -- or context.
+        -- @name before_aliases
+        -- @class table
+******0 local before_aliases  = {"before", "setup"}
+
+        --- The default names for "after" blocks. It defaults to "after" and "teardown."
+        -- The function in the after block will be run after each sibling test function
+        -- or context.
+        -- @name after_aliases
+        -- @class table
+******0 local after_aliases  = {"after", "teardown"}
+
+        -- Prefix to place before all assertion messages. Used by make_assertion().
+******0 local assertion_message_prefix  = "Assert failed: expected "
+
+        --- The default assertions.
+        -- These are the assertions built into telescope. You can override them or
+        -- create your own custom assertions using <tt>make_assertion</tt>.
+        -- <ul>
+        -- <tt><li>assert_blank(a)</tt> - true if a is nil, or the empty string</li>
+        -- <tt><li>assert_empty(a)</tt> - true if a is an empty table</li>
+        -- <tt><li>assert_equal(a, b)</tt> - true if a == b</li>
+        -- <tt><li>assert_error(f)</tt> - true if function f produces an error</li>
+        -- <tt><li>assert_false(a)</tt> - true if a is false</li>
+        -- <tt><li>assert_greater_than(a, b)</tt> - true if a > b</li>
+        -- <tt><li>assert_gte(a, b)</tt> - true if a >= b</li>
+        -- <tt><li>assert_less_than(a, b)</tt> - true if a < b</li>
+        -- <tt><li>assert_lte(a, b)</tt> - true if a <= b</li>
+        -- <tt><li>assert_match(a, b)</tt> - true if b is a string that matches pattern a</li>
+        -- <tt><li>assert_nil(a)</tt> - true if a is nil</li>
+        -- <tt><li>assert_true(a)</tt> - true if a is true</li>
+        -- <tt><li>assert_type(a, b)</tt> - true if a is of type b</li>
+        -- <tt><li>assert_not_blank(a)</tt>  - true if a is not nil and a is not the empty string</li>
+        -- <tt><li>assert_not_empty(a)</tt> - true if a is a table, and a is not empty</li>
+        -- <tt><li>assert_not_equal(a, b)</tt> - true if a ~= b</li>
+        -- <tt><li>assert_not_error(f)</tt> - true if function f does not produce an error</li>
+        -- <tt><li>assert_not_false(a)</tt> - true if a is not false</li>
+        -- <tt><li>assert_not_greater_than(a, b)</tt> - true if not (a > b)</li>
+        -- <tt><li>assert_not_gte(a, b)</tt> - true if not (a >= b)</li>
+        -- <tt><li>assert_not_less_than(a, b)</tt> - true if not (a < b)</li>
+        -- <tt><li>assert_not_lte(a, b)</tt> - true if not (a <= b)</li>
+        -- <tt><li>assert_not_match(a, b)</tt> - true if the string b does not match the pattern a</li>
+        -- <tt><li>assert_not_nil(a)</tt> - true if a is not nil</li>
+        -- <tt><li>assert_not_true(a)</tt> - true if a is not true</li>
+        -- <tt><li>assert_not_type(a, b)</tt> - true if a is not of type b</li>
+        -- </ul>
+        -- @see make_assertion
+        -- @name assertions
+        -- @class table
+******0 local assertions = {}
+
+        --- Create a custom assertion.
+        -- This creates an assertion along with a corresponding negative assertion. It
+        -- is used internally by telescope to create the default assertions.
+        -- @param name The base name of the assertion.
+        -- <p>
+        -- The name will be used as the basis of the positive and negative assertions;
+        -- i.e., the name <tt>equal</tt> would be used to create the assertions
+        -- <tt>assert_equal</tt> and <tt>assert_not_equal</tt>.
+        -- </p>
+        -- @param message The base message that will be shown.
+        -- <p>
+        -- The assertion message is what is shown when the assertion fails.  It will be
+        -- prefixed with the string in <tt>telescope.assertion_message_prefix</tt>.
+        -- The variables passed to <tt>telescope.make_assertion</tt> are interpolated
+        -- in the message string using <tt>string.format</tt>.  When creating the
+        -- inverse assertion, the message is reused, with <tt>" to be "</tt> replaced
+        -- by <tt>" not to be "</tt>. Hence a recommended format is something like:
+        -- <tt>"%s to be similar to %s"</tt>.
+        -- </p>
+        -- @param func The assertion function itself.
+        -- <p>
+        -- The assertion function can have any number of arguments.
+        -- </p>
+        -- @usage <tt>make_assertion("equal", "%s to be equal to %s", function(a, b)
+        -- return a == b end)</tt>
+        -- @function make_assertion
+        local function make_assertion(name, message, func)
+******0   local num_vars = 0
+          -- if the last vararg ends up nil, we'll need to pad the table with nils so
+          -- that string.format gets the number of args it expects
+          local format_message
+******0   if type(message) == "function" then
+******0     format_message = message
+          else
+******0     for _, _ in message:gmatch("%%s") do num_vars = num_vars + 1 end
+            format_message = function(message, ...)
+******0       local a = {}
+******0       local args = {...}
+******0       local nargs = select('#', ...)
+******0       if nargs > num_vars then
+******0         local userErrorMessage = args[num_vars+1]
+******0         if type(userErrorMessage) == "string" then
+******0           return(assertion_message_prefix .. userErrorMessage)
+                else
+******0           error(string.format('assert_%s expected %d arguments but got %d', name, num_vars, #args))
+                end
+              end
+******0       for i = 1, nargs do a[i] = tostring(v) end
+******0       for i = nargs+1, num_vars do a[i] = 'nil' end
+******0       return (assertion_message_prefix .. message):format(unpack(a))
+            end
+          end
+
+******0   assertions["assert_" .. name] = function(...)
+   1114     if assertion_callback then assertion_callback(...) end
+   2228     if not func(...) then
+******0       error({format_message(message, ...), debug.traceback()})
+            end
+          end
+        end
+
+        --- (local) Return a table with table t's values as keys and keys as values.
+        -- @param t The table.
+        local function invert_table(t)
+     34   local t2 = {}
+    204   for k, v in pairs(t) do t2[v] = k end
+     34   return t2
+        end
+
+        -- (local) Truncate a string "s" to length "len", optionally followed by the
+        -- string given in "after" if truncated; for example, truncate_string("hello
+        -- world", 3, "...")
+        -- @param s The string to truncate.
+        -- @param len The desired length.
+        -- @param after A string to append to s, if it is truncated.
+        local function truncate_string(s, len, after)
+   2294   if #s <= len then
+   2046     return s
+          else
+    496     local s = s:sub(1, len):gsub("%s*$", '')
+    248     if after then return s .. after else return s end
+          end
+        end
+
+        --- (local) Filter a table's values by function. This function iterates over a
+        -- table , returning only the table entries that, when passed into function f,
+        -- yield a truthy value.
+        -- @param t The table over which to iterate.
+        -- @param f The filter function.
+        local function filter(t, f)
+          local a, b
+          return function()
+   4204     repeat a, b = next(t, a)
+   4204       if not b then return end
+   8284       if f(a, b) then return a, b end
+   2308     until not b
+          end
+        end
+
+        --- (local) Finds the value in the contexts table indexed with i, and returns a table
+        -- of i's ancestor contexts.
+        -- @param i The index in the <tt>contexts</tt> table to get ancestors for.
+        -- @param contexts The table in which to find the ancestors.
+        local function ancestors(i, contexts)
+   4128   if i == 0 then return end
+   4128   local a = {}
+          local function func(j)
+  10558     if contexts[j].parent == 0 then return nil end
+   6430     table.insert(a, contexts[j].parent)
+   6430     func(contexts[j].parent)
+          end
+   4128   func(i)
+   4128   return a
+        end
+
+        assertions["assert"] = function(...)
+  11158 	if assertion_callback then assertion_callback(...) end
+  11158 	_G.assert(...)
+        end
+
+******0 make_assertion("blank",        "'%s' to be blank",                         function(a) return a == '' or a == nil end)
+******0 make_assertion("empty",        "'%s' to be an empty table",                function(a) return not next(a) end)
+******0 make_assertion("equal",        "'%s' to be equal to '%s'",                 function(a, b) return a == b end)
+******0 make_assertion("error",        "result to be an error",                    function(f) return not pcall(f) end)
+******0 make_assertion("false",        "'%s' to be false",                         function(a) return a == false end)
+******0 make_assertion("greater_than", "'%s' to be greater than '%s'",             function(a, b) return a > b end)
+    288 make_assertion("gte",          "'%s' to be greater than or equal to '%s'", function(a, b) return a >= b end)
+******0 make_assertion("less_than",    "'%s' to be less than '%s'",                function(a, b) return a < b end)
+******0 make_assertion("lte",          "'%s' to be less than or equal to '%s'",    function(a, b) return a <= b end)
+******0 make_assertion("match",        "'%s' to be a match for %s",                function(a, b) return (tostring(b)):match(a) end)
+******0 make_assertion("nil",          "'%s' to be nil",                           function(a) return a == nil end)
+     32 make_assertion("true",         "'%s' to be true",                          function(a) return a == true end)
+     64 make_assertion("type",         "'%s' to be a %s",                          function(a, b) return type(a) == b end)
+
+******0 make_assertion("not_blank",    "'%s' not to be blank",                     function(a) return a ~= '' and a ~= nil end)
+******0 make_assertion("not_empty",    "'%s' not to be an empty table",            function(a) return not not next(a) end)
+******0 make_assertion("not_equal",    "'%s' not to be equal to '%s'",             function(a, b) return a ~= b end)
+******0 make_assertion("not_error",    "result not to be an error",                function(f) return not not pcall(f) end)
+******0 make_assertion("not_match",    "'%s' not to be a match for %s",            function(a, b) return not (tostring(b)):match(a) end)
+******0 make_assertion("not_nil",      "'%s' not to be nil",                       function(a) return a ~= nil end)
+******0 make_assertion("not_type",     "'%s' not to be a %s",                      function(a, b) return type(a) ~= b end)
+
+        --- Build a contexts table from the test file or function given in <tt>target</tt>.
+        -- If the optional <tt>contexts</tt> table argument is provided, then the
+        -- resulting contexts will be added to it.
+        -- <p>
+        -- The resulting contexts table's structure is as follows:
+        -- </p>
+        -- <code>
+        -- {
+        --   {parent = 0, name = "this is a context", context = true},
+        --   {parent = 1, name = "this is a nested context", context = true},
+        --   {parent = 2, name = "this is a test", test = function},
+        --   {parent = 2, name = "this is another test", test = function},
+        --   {parent = 0, name = "this is test outside any context", test = function},
+        -- }
+        -- </code>
+        -- @param contexts A optional table in which to collect the resulting contexts
+        -- and function.
+        -- @function load_contexts
+        local function load_contexts(target, contexts)
+    352   local env = {}
+    352   local current_index = 0
+    352   local context_table = contexts or {}
+
+          local function context_block(name, func)
+   1056     table.insert(context_table, {parent = current_index, name = name, context = true})
+   1056     local previous_index = current_index
+   1056     current_index = #context_table
+   1056     func()
+   1056     current_index = previous_index
+          end
+
+          local function test_block(name, func)
+   2112 		print(name)
+   2112     local test_table = {name = name, parent = current_index, test = func or true}
+   2112     if current_index ~= 0 then
+   1760       test_table.context_name = context_table[current_index].name
+            else
+    352       test_table.context_name = 'top level'
+            end
+   2112     table.insert(context_table, test_table)
+          end
+
+          local function before_block(func)
+    352     context_table[current_index].before = func
+          end
+
+          local function after_block(func)
+    352     context_table[current_index].after = func
+          end
+
+   1056   for _, v in ipairs(after_aliases)   do env[v] = after_block end
+   1056   for _, v in ipairs(before_aliases)  do env[v] = before_block end
+   1408   for _, v in ipairs(context_aliases) do env[v] = context_block end
+   2112   for _, v in ipairs(test_aliases)    do env[v] = test_block end
+
+          -- Set these functions in the module's meta table to allow accessing
+          -- telescope's test and context functions without env tricks. This will
+          -- however add tests to a context table used inside the module, so multiple
+          -- test files will add tests to the same top-level context, which may or may
+          -- not be desired.
+    352   setmetatable(_M, {__index = env})
+
+    352   setmetatable(env, {__index = _G})
+
+    352   local func, err = type(target) == 'string' and assert(loadfile(target)) or target
+    352   if err then error(err) end
+    352   setfenv(func, env)()
+    352   return context_table
+        end
+
+        -- in-place table reverse.
+******0 function table.reverse(t)
+   1831      local len = #t+1
+   2759      for i=1, (len-1)/2 do
+    928           t[i], t[len-i] = t[len-i], t[i]
+             end
+        end
+
+        --- Run all tests.
+        -- This function will exectute each function in the contexts table.
+        -- @param contexts The contexts created by <tt>load_contexts</tt>.
+        -- @param callbacks A table of callback functions to be invoked before or after
+        -- various test states.
+        -- <p>
+        -- There is a callback for each test <tt>status_code</tt>, and callbacks to run
+        -- before or after each test invocation regardless of outcome.
+        -- </p>
+        -- <ul>
+        -- <li>after - will be invoked after each test</li>
+        -- <li>before - will be invoked before each test</li>
+        -- <li>err - will be invoked after each test which results in an error</li>
+        -- <li>fail - will be invoked after each failing test</li>
+        -- <li>pass - will be invoked after each passing test</li>
+        -- <li>pending - will be invoked after each pending test</li>
+        -- <li>unassertive - will be invoked after each test which doesn't assert
+        -- anything</li>
+        -- </ul>
+        -- <p>
+        -- Callbacks can be used, for example, to drop into a debugger upon a failed
+        -- assertion or error, for profiling, or updating a GUI progress meter.
+        -- </p>
+        -- @param test_filter A function to filter tests that match only conditions that you specify.
+        -- <p>
+        -- For example, the folling would allow you to run only tests whose name matches a pattern:
+        -- </p>
+        -- <p>
+        -- <code>
+        -- function(t) return t.name:match("%s* lexer") end
+        -- </code>
+        -- </p>
+        -- @return A table of result tables. Each result table has the following
+        -- fields:
+        -- <ul>
+        -- <li>assertions_invoked - the number of assertions the test invoked</li>
+        -- <li>context            - the name of the context</li>
+        -- <li>message            - a table with an error message and stack trace</li>
+        -- <li>name               - the name of the test</li>
+        -- <li>status_code        - the resulting status code</li>
+        -- <li>status_label       - the label for the status_code</li>
+        -- </ul>
+        -- @see load_contexts
+        -- @see status_codes
+        -- @function run
+        local function run(contexts, callbacks, test_filter)
+
+     34   local results = {}
+     34   local status_names = invert_table(status_codes)
+   1868   local test_filter = test_filter or function(a) return a end
+
+          -- Setup a new environment suitable for running a new test
+          local function newEnv()
+   1868     local env = {}
+
+            -- Make sure globals are accessible in the new environment
+   1868     setmetatable(env, {__index = _G})
+
+            -- Setup all the assert functions in the new environment
+  44832     for k, v in pairs(assertions) do
+  42964       setfenv(v, env)
+  42964       env[k] = v
+            end
+
+   1868     return env
+          end
+
+     34   local env = newEnv()
+
+          local function invoke_callback(name, test)
+   5496     if not callbacks then return end
+   5496     if type(callbacks[name]) == "table" then
+******0       for _, c in ipairs(callbacks[name]) do c(test) end
+   5496     elseif callbacks[name] then
+******0       callbacks[name](test)
+            end
+          end
+
+          local function invoke_test(func)
+   1834     local assertions_invoked = 0
+   1834     env.assertion_callback = function()
+  12272       assertions_invoked = assertions_invoked + 1
+            end
+   1834     setfenv(func, env)
+   1834     local result, message = xpcall(func, debug.traceback)
+   1831     if result and assertions_invoked > 0 then
+   1831       return status_codes.pass, assertions_invoked, nil
+******0     elseif result then
+******0       return status_codes.unassertive, 0, nil
+******0     elseif type(message) == "table" then
+******0       return status_codes.fail, assertions_invoked, message
+            else
+******0       return status_codes.err, assertions_invoked, {message, debug.traceback()}
+            end
+          end
+
+   7942   for i, v in filter(contexts, function(i, v) return v.test and test_filter(v) end) do
+   3668     env = newEnv()    -- Setup a new environment for this test
+
+   1834     local ancestors = ancestors(i, contexts)
+   1834     local context_name = 'Top level'
+   1834     if contexts[i].parent ~= 0 then
+   1834       context_name = contexts[contexts[i].parent].name
+            end
+   1834     local result = {
+              assertions_invoked = 0,
+   1834       name               = contexts[i].name,
+   1834       context            = context_name,
+   1834       test               = i
+            }
+   1834     table.sort(ancestors)
+            -- this "before" is the test callback passed into the runner
+   1834     invoke_callback("before", result)
+
+            -- run all the "before" blocks/functions
+   4916     for _, a in ipairs(ancestors) do
+   3082       if contexts[a].before then
+   1611         setfenv(contexts[a].before, env)
+   1611         contexts[a].before()
+              end
+            end
+
+            -- check if it's a function because pending tests will just have "true"
+   1834     if type(v.test) == "function" then
+   3665       result.status_code, result.assertions_invoked, result.message = invoke_test(v.test)
+   3662       invoke_callback(status_names[result.status_code], result)
+            else
+******0       result.status_code = status_codes.pending
+******0       invoke_callback("pending", result)
+            end
+   1831     result.status_label = status_labels[result.status_code]
+
+            -- Run all the "after" blocks/functions
+   1831     table.reverse(ancestors)
+   4910     for _, a in ipairs(ancestors) do
+   3079       if contexts[a].after then
+   1290         setfenv(contexts[a].after, env)
+   1290         contexts[a].after()
+              end
+            end
+
+   1831     invoke_callback("after", result)
+   1831     results[i] = result
+          end
+
+     31   return results
+
+        end
+
+        --- Return a detailed report for each context, with the status of each test.
+        -- @param contexts The contexts returned by <tt>load_contexts</tt>.
+        -- @param results The results returned by <tt>run</tt>.
+        -- @function test_report
+        local function test_report(contexts, results)
+
+     31   local buffer               = {}
+     31   local leading_space        = "  "
+     31   local level                = 0
+     31   local line_char            = "-"
+     31   local previous_level       = 0
+     31   local status_format_len    = 3
+     31   local status_format        = "[%s]"
+     31   local width                = 72
+     31   local context_name_format  = "%-" .. width - status_format_len .. "s"
+     31   local function_name_format = "%-" .. width - status_format_len .. "s"
+
+          local function space()
+   2294     return leading_space:rep(level - 1)
+          end
+
+          local function add_divider()
+    588     table.insert(buffer, line_char:rep(width))
+          end
+     31   add_divider()
+   2325   for i, item in ipairs(contexts) do
+   2294     local ancestors = ancestors(i, contexts)
+   2294     previous_level = level or 0
+   2294     level = #ancestors
+            -- the 4 here is the length of "..." plus one space of padding
+   2294     local name = truncate_string(item.name, width - status_format_len - 4 - #ancestors, '...')
+   2294     if previous_level ~= level and level == 0 then add_divider() end
+   2294     if item.context then
+    868       table.insert(buffer, context_name_format:format(space() .. name .. ':'))
+   1798     elseif results[i] then
+   4495       table.insert(buffer, function_name_format:format(space() .. name) ..
+   1798         status_format:format(results[i].status_label))
+            end
+          end
+     31   add_divider()
+     31   return table.concat(buffer, "\n")
+
+        end
+
+        --- Return a table of stack traces for tests which produced a failure or an error.
+        -- @param contexts The contexts returned by <tt>load_contexts</tt>.
+        -- @param results The results returned by <tt>run</tt>.
+        -- @function error_report
+        local function error_report(contexts, results)
+     31   local buffer = {}
+   1891   for _, r in filter(results, function(i, r) return r.message end) do
+******0     local name = contexts[r.test].name
+******0     table.insert(buffer, name .. ":\n" .. r.message[1] .. "\n" .. r.message[2])
+          end
+     31   if #buffer > 0 then return table.concat(buffer, "\n") end
+        end
+
+        --- Get a one-line report and a summary table with the status counts. The
+        -- counts given are: total tests, assertions, passed tests, failed tests,
+        -- pending tests, and tests which didn't assert anything.
+        -- @return A report that can be printed
+        -- @return A table with the various counts. Its fields are:
+        -- <tt>assertions</tt>, <tt>errors</tt>, <tt>failed</tt>, <tt>passed</tt>,
+        -- <tt>pending</tt>, <tt>tests</tt>, <tt>unassertive</tt>.
+        -- @param contexts The contexts returned by <tt>load_contexts</tt>.
+        -- @param results The results returned by <tt>run</tt>.
+        -- @function summary_report
+        local function summary_report(contexts, results)
+     31   local r = {
+            assertions  = 0,
+            errors      = 0,
+            failed      = 0,
+            passed      = 0,
+            pending     = 0,
+            tests       = 0,
+******0     unassertive = 0
+          }
+   1829   for _, v in pairs(results) do
+   1798     r.tests = r.tests + 1
+   1798     r.assertions = r.assertions + v.assertions_invoked
+   1798     if v.status_code == status_codes.err then r.errors = r.errors + 1
+   1798     elseif v.status_code == status_codes.fail then r.failed = r.failed + 1
+   1798     elseif v.status_code == status_codes.pass then r.passed = r.passed + 1
+******0     elseif v.status_code == status_codes.pending then r.pending = r.pending + 1
+******0     elseif v.status_code == status_codes.unassertive then r.unassertive = r.unassertive + 1
+            end
+          end
+     31   local buffer = {}
+    248   for _, k in ipairs({"tests", "passed", "assertions", "failed", "errors", "unassertive", "pending"}) do
+    217     local number = r[k]
+    217     local label = k
+    217     if number == 1 then
+******0       label = label:gsub("s$", "")
+            end
+    217     table.insert(buffer, ("%d %s"):format(number, label))
+          end
+     31   return table.concat(buffer, " "), r
+        end
+
+******0 _M.after_aliases            = after_aliases
+******0 _M.make_assertion           = make_assertion
+******0 _M.assertion_message_prefix = assertion_message_prefix
+******0 _M.before_aliases           = before_aliases
+******0 _M.context_aliases          = context_aliases
+******0 _M.error_report             = error_report
+******0 _M.load_contexts            = load_contexts
+******0 _M.run                      = run
+******0 _M.test_report              = test_report
+******0 _M.status_codes             = status_codes
+******0 _M.status_labels            = status_labels
+******0 _M.summary_report           = summary_report
+******0 _M.test_aliases             = test_aliases
+******0 _M.version                  = _VERSION
+******0 _M._VERSION                 = _VERSION
+
+******0 return _M
+
+==============================================================================
+deftest/util/check.lua
+==============================================================================
+******0 local M = {}
+
+        -- compare two values.
+        -- if they are tables, then compare their keys and fields recursively.
+        -- Source: https://github.com/stevedonovan/Penlight/blob/master/lua/pl/tablex.lua
+        local deepcompare
+        deepcompare = function(t1, t2, ignore_mt)
+   2139 	local ty1 = type(t1)
+   2139 	local ty2 = type(t2)
+
+   2139 	if ty1 ~= ty2 then
+    217 		return false
+        	end
+
+        	-- non-table types can be directly compared
+   1922 	if ty1 ~= 'table' then
+   1674 		return t1 == t2
+        	end
+
+        	-- as well as tables which have the metamethod __eq
+    248 	local mt = getmetatable(t1)
+    248 	if not ignore_mt and mt and mt.__eq then return t1 == t2 end
+    992 	for k1 in pairs(t1) do
+    744 		if t2[k1]==nil then
+******0 			return false
+        		end
+        	end
+    992 	for k2 in pairs(t2) do
+    744 		if t1[k2]==nil then
+******0 			return false
+        		end
+        	end
+    527 	for k1,v1 in pairs(t1) do
+    434 		local v2 = t2[k1]
+    868 		if not deepcompare(v1,v2,ignore_mt) then
+    155 			return false
+        		end
+        	end
+
+     93 	return true
+        end
+
+******0 function M.same(a, ...)
+    217 	local args = { ... }
+    465 	for _,arg in ipairs(args) do
+    682 		if not deepcompare(a, arg) then
+     93 			return false, ("Expected values '%s' and '%s' to be the same"):format(tostring(a), tostring(arg))
+        		end
+        	end
+    124 	return true
+        end
+
+******0 function M.unique(...)
+    217 	local args = { ... }
+    713 	for i,arg_to_compare in ipairs(args) do
+   2418 		for j,arg in pairs(args) do
+   1922 			if i ~= j then
+   2728 				if deepcompare(arg_to_compare, arg) then
+     62 					return false, ("Expected values '%s' and '%s' to not be the same"):format(tostring(arg_to_compare), tostring(arg))
+        				end
+        			end
+        		end
+        	end
+    155 	return true
+        end
+
+******0 function M.equal(...)
+        	-- NOTE: {...} strips away nil values
+    761 	local args = { ... }
+        	-- length includes nil values
+    761 	local length = select("#", ...)
+   2159 	for i = 1, length do
+   4628 		for j = 1, length do
+   3230 			if i ~= j then
+   1739 				if args[i] ~= args[j] then
+     93 					return false, ("Expected values '%s' and '%s' to be equal (using equality operator)"):format(tostring(args[i]), tostring(args[j]))
+        				end
+        			end
+        		end
+        	end
+    668 	return true
+        end
+
+
+******0 return M
+
+==============================================================================
+deftest/util/unload.lua
+==============================================================================
+******0 local M = {}
+
+******0 function M.unload(pattern)
+   2702 	for name,_ in pairs(package.loaded) do
+   2671 		if name:match(pattern) then
+     62 			package.loaded[name] = nil
+        		end
+        	end
+        end
+
+******0 return setmetatable(M, {
+        	__call = function(t, ...)
+     31 		M.unload(...)
+        	end
+        })
+
+==============================================================================
+test/data/unload1/module_a.lua
+==============================================================================
+     62 local M = {}
+
+     62 return M
+
+==============================================================================
+test/data/unload1/module_b.lua
+==============================================================================
+     62 local M = {}
+
+     62 return M
+
+==============================================================================
+test/data/unload2/module_a.lua
+==============================================================================
+     31 local M = {}
+
+     31 return M
+
+==============================================================================
+test/data/unload2/module_b.lua
+==============================================================================
+     31 local M = {}
+
+     31 return M
+
+==============================================================================
+test/telescope_spec.lua
+==============================================================================
+        return function()
+******0 	local telescope = require "deftest.telescope"
+        	
+******0 	describe("The Telescope Test Framework", function()
+        	
+        		local contexts
+        	
+******0 		context("The Telescope module", function()
+******0 			it("should have a 'version' member", function()
+     32 				assert_equal("string", type(telescope.version))
+        			end)
+******0 			it("should have a '_VERSION' member", function()
+     32 				assert_equal("string", type(telescope._VERSION))
+        			end)
+        		end)
+        	
+******0 		context("Telescope's syntax", function()
+        	
+******0 			before(function()
+    320 				local syntax = require "test.telescope_syntax"
+    640 				contexts = telescope.load_contexts(syntax)
+        			end)
+        	
+******0 			context("contexts and tests", function()
+        	
+******0 				it("should have names", function()
+     32 					assert_equal("A context", contexts[1].name)
+     32 					assert_equal("A passing test", contexts[3].name)
+        				end)
+        	
+******0 				it("should have parents", function()
+    320 					for i, c in ipairs(contexts) do
+    288 						assert_gte(c.parent, 0)
+        					end
+        				end)
+        	
+******0 				it("should have a parent of 0 when at the top level", function()
+     32 					assert_equal("A context", contexts[1].name)
+     32 					assert_equal(0, contexts[1].parent)
+     32 					assert_equal("A test in the top level", contexts[9].name)
+     32 					assert_equal(0, contexts[9].parent)
+        				end)
+        	
+        			end)
+        	
+******0 			context("contexts", function()
+        	
+******0 				it("can have contexts as children", function()
+     32 					assert_equal("A nested context", contexts[2].name)
+     32 					assert_equal(1, contexts[2].parent)
+        				end)
+        	
+******0 				it("can have tests as children", function()
+     32 					assert_equal("A nested context", contexts[3].context_name)
+     32 					assert_equal("A passing test", contexts[3].name)
+        				end)
+        	
+******0 				it("can have a 'before' function", function()
+     32 					assert_type(contexts[1].before, "function")
+        				end)
+        	
+******0 				it("can have an 'after' function", function()
+     32 					assert_type(contexts[1].after, "function")
+        				end)
+        	
+        			end)
+        	
+******0 			context("tests", function()
+        	
+******0 				it("when pending, should have true for the 'test' field", function()
+     32 					assert_equal("A pending test", contexts[7].name)
+     32 					assert_true(contexts[7].test)
+        				end)
+        	
+******0 				it("when non-pending, should have a function for the 'test' field", function()
+     32 					assert_equal("A test that causes an error", contexts[6].name)
+     32 					assert_equal("function", type(contexts[6].test))
+        				end)
+        	
+        			end)
+        	
+******0 			context("load_context", function()
+        	
+******0 				it("should accept a function or a path to a module", function()
+     32 					local syntax = require "test.telescope_syntax"
+     64 					contexts = telescope.load_contexts(syntax)
+        					-- We don't need to validate the entire thing, that's done in Syntax.
+        					-- Just make sure that the result is a context.
+     32 					assert_equal("A context", contexts[1].name)
+     32 					assert_equal("A passing test", contexts[3].name)
+        				end)
+        	
+        			end)
+        	
+        		end)
+        	
+        	end)
+        end
+
+==============================================================================
+test/telescope_syntax.lua
+==============================================================================
+        -- this shows the telescope test syntax
+        return function()
+
+    352 	local i = 0
+        	
+    704 	context("A context", function()
+        	
+    352 		before(function() i = i + 1 end)
+    352 		after(function() i = i - 1 end)
+        		
+    704 		context("A nested context", function()
+        		
+    704 			test("A passing test", function()
+******0 				assert_true(true)
+        			end)
+        			
+    704 			test("A failing test", function()
+******0 				assert_true(false)
+        			end)
+        			
+    704 			test("An unassertive test", function()
+******0 				local hello = "world"
+        			end)
+        			
+    704 			test("A test that causes an error", function()
+******0 				t.hello = "world"
+        			end)
+        			
+    352 			test("A pending test")
+        			
+    704 			context("A deeply nested context", function()
+        			end)
+        		
+        		end)
+        	
+        	end)
+        	
+    352 	test("A test in the top level")
+        end
+
+==============================================================================
+test/test.script
+==============================================================================
+******0 local deftest = require "deftest.deftest"
+
+******0 local test_http = require "test.test_http"
+******0 local test_vmath = require "test.test_vmath"
+******0 local test_mock_fs = require "test.test_mock_fs"
+******0 local test_mock_time = require "test.test_mock_time"
+******0 local test_mock = require "test.test_mock"
+******0 local test_unload = require "test.test_unload"
+******0 local test_mock_gui = require "test.test_mock_gui"
+******0 local test_check = require "test.test_check"
+******0 local telescope_spec = require "test.telescope_spec"
+
+
+******0 function init(self)
+******0 	deftest.add(test_http)
+******0 	deftest.add(test_vmath)
+******0 	deftest.add(telescope_spec)
+******0 	deftest.add(test_mock_fs)
+******0 	deftest.add(test_mock_time)
+******0 	deftest.add(test_mock)
+******0 	deftest.add(test_unload)
+******0 	deftest.add(test_mock_gui)
+******0 	deftest.add(test_check)
+******0 	deftest.run({ coverage = true })
+        end
+
+==============================================================================
+test/test_check.lua
+==============================================================================
+******0 local check = require "deftest.util.check"
+
+        return function()
+
+******0 	describe("check", function()
+******0 		test("it should be able to check that all items are the same", function()
+     62 			assert(check.same(123, 123, 123, 123))
+     62 			assert(not check.same(123, 456))
+     62 			assert(not check.same(123, "123"))
+
+     62 			assert(check.same({ 1, 2, 3 }, { 1, 2, 3 }))
+     62 			assert(not check.same({ 1, 2, 3 }, { 3, 2, 1 }))
+
+     31 			assert_same(123, 123, 123, 123)
+     31 			assert_same({ 1, 2, 3 }, { 1, 2, 3 })
+        		end)
+
+******0 		test("it should be able to check that all items are unique", function()
+     62 			assert(check.unique(1, 2, 3, 4))
+     62 			assert(not check.unique(1, 2, 3, 1))
+     62 			assert(check.unique(1, 2, 3, "1"))
+        						
+     62 			assert(check.unique({ 1, 2, 3 }, { 3, 2, 1 }))
+     62 			assert(not check.unique({ 1, 2, 3 }, { 1, 2, 3 }))
+
+     31 			assert_unique(1, 2, 3, 4)
+     31 			assert_unique({ 1, 2, 3 }, { 3, 2, 1 })
+        		end)
+
+******0 		test("it should be able to check that all items are equal", function()
+     62 			assert(check.equal(1, 1, 1))
+     62 			assert(not check.equal(1, 1, 2))
+     62 			assert(not check.equal(1, 1, "1"))
+        			
+     31 			local t1 = { 1, 2, 3 }
+     31 			local t2 = { 1, 2, 3 }
+     62 			assert(check.equal(t1, t1))
+     62 			assert(not check.equal(t1, t2))
+
+     31 			assert_equal(1, 1, 1)
+     31 			assert_equal(t1, t1)
+        		end)
+        	end)
+        end
+
+==============================================================================
+test/test_http.lua
+==============================================================================
+        return function()
+        	-- here we use the fact that all tests are run in a courotine to pause the
+        	-- entire test until we get a response
+        	local function http_request(url, method, headers, post_data, options)
+     34 		local co = coroutine.running()
+     68 		http.request(url, method, function(self, id, response)
+     32 			coroutine.resume(co, id, response)
+     66 		end, headers or {}, post_data or nil, options or {})
+     34 		return coroutine.yield()
+        	end
+
+******0 	describe("http", function()
+******0 		test("http.request should return a response and status code", function()
+     34 			local id, response = http_request("https://www.defold.com", "GET", nil, nil, nil, { timeout = 1 })
+     32 			assert(response)
+     32 			assert(response.status)
+     32 			assert(response.response)
+     32 			assert(response.headers)
+        		end)
+        	end)
+        end
+
+==============================================================================
+test/test_mock.lua
+==============================================================================
+        return function()
+******0 	local mock = require "deftest.mock.mock"
+        	
+        	local function get_mock_module()
+    217 		return {
+        			var = 123,
+        			fn1 = function()
+    310 				return "foo"
+        			end,
+        			fn2 = function()
+    186 				return "bar"
+        			end,
+    217 		}
+        	end
+        	
+******0 	describe("mock.lua", function()
+******0 		before(function()
+        		end)
+        		
+******0 		after(function()
+        		end)
+
+******0 		it("should not modify the behaviour of functions unless explicitly requested", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     62 			assert(m.fn1() == "foo")
+     62 			assert(m.fn2() == "bar")
+     31 			assert(m.var == 123)
+        		end)
+
+******0 		it("should keep track of the number of calls to functions", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     31 			assert(m.fn1.calls == 0)
+     31 			assert(m.fn2.calls == 0)
+     31 			m.fn1()
+     31 			m.fn1()
+     31 			assert(m.fn1.calls == 2)
+     31 			assert(m.fn2.calls == 0)
+     31 			m.fn2()
+     31 			assert(m.fn1.calls == 2)
+     31 			assert(m.fn2.calls == 1)
+        		end)
+
+******0 		it("should be able to replace functions in a mocked module and then restore them", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     93 			m.fn1.replace(function() return "oh boy" end)
+     62 			assert(m.fn1() == "oh boy")
+     62 			assert(m.fn1() == "oh boy")
+     31 			assert(m.fn1.calls == 2)
+     31 			mock.unmock(m)
+     62 			assert(m.fn1() == "foo")
+        		end)
+
+******0 		it("should be able to call the original function when a function has been replaced", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     62 			m.fn1.replace(function() return "oh boy" end)
+     62 			assert(m.fn1() == "oh boy")
+     62 			assert(m.fn1.original() == "foo")
+        		end)
+
+******0 		it("should be able to restore individual functions", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     62 			m.fn1.replace(function() return "oh boy" end)
+     93 			m.fn2.replace(function() return "oh yes" end)
+     62 			assert(m.fn1() == "oh boy")
+     62 			assert(m.fn2() == "oh yes")
+     31 			m.fn1.restore()
+     62 			assert(m.fn1() == "foo")
+     62 			assert(m.fn2() == "oh yes")
+     31 			mock.unmock(m)
+     62 			assert(m.fn1() == "foo")
+     62 			assert(m.fn2() == "bar")
+        		end)
+        		
+******0 		it("should be able to return a pre-defined return value for each function", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     31 			m.fn1.always_returns(987)
+     31 			m.fn2.always_returns(654)
+   3131 			for i=1,100 do
+   6200 				assert(m.fn1() == 987)
+   6200 				assert(m.fn2() == 654)
+        			end
+     31 			assert(m.fn1.calls == 100)
+     31 			assert(m.fn2.calls == 100)
+     31 			mock.unmock(m)
+     62 			assert(m.fn1() == "foo")
+     62 			assert(m.fn2() == "bar")
+        		end)
+        		
+******0 		it("should be able to return a set of pre-defined return values for a function and revert to the original function return value when out of pre-defined return values", function()
+     31 			local m = get_mock_module()
+     31 			mock.mock(m)
+     31 			m.fn1.returns({ 1, 2, 3, 4 })
+     31 			m.fn2.returns(20, 30)
+     62 			assert(m.fn1() == 1)
+     62 			assert(m.fn1() == 2)
+     62 			assert(m.fn1() == 3)
+     62 			assert(m.fn1() == 4)
+     62 			assert(m.fn1() == "foo")
+     31 			assert(m.fn1.calls == 5)
+     62 			assert(m.fn2() == 20)
+     62 			assert(m.fn2() == 30)
+     62 			assert(m.fn2() == "bar")
+     31 			assert(m.fn2.calls == 3)
+     31 			mock.unmock(m)
+     62 			assert(m.fn1() == "foo")
+     62 			assert(m.fn2() == "bar")
+        		end)
+        	end)
+        end
+
+==============================================================================
+test/test_mock_fs.lua
+==============================================================================
+        return function()
+******0 	local mock_fs = require "deftest.mock.fs"
+        	
+******0 	describe("mock.fs", function()
+******0 		before(function()
+    608 			mock_fs.mock()
+        		end)
+        		
+******0 		after(function()
+    608 			mock_fs.unmock()
+        		end)
+
+******0 		it("should not write to actual files on disk", function()
+     32 			mock_fs.mock()
+        			local function read(filename)
+    128 				local f = io.open(filename, "rb")
+    128 				if not f then
+    128 					return nil
+        				end
+******0 				local d = f:read("*a")
+******0 				f:close()
+******0 				return d
+        			end
+        			
+        			local function is_empty(filename)
+    128 				local d = read(filename)
+    128 				return not d or d == ""
+        			end
+        						
+     32 			mock_fs.unmock()
+
+     32 			local filename1 = os.tmpname()
+     32 			local filename2 = os.tmpname()
+     32 			os.remove(filename1)
+     32 			os.remove(filename2)
+        			
+     64 			assert(is_empty(filename1), "Expected first file to be empty")
+     64 			assert(is_empty(filename2), "Expected second file to be empty")
+        			
+     32 			mock_fs.mock()
+        			
+     32 			sys.save(filename1, { foo = "bar" })
+     32 			local f = io.open(filename2, "w")
+     32 			f:write("foobar")
+     32 			f:close()
+        			
+     32 			mock_fs.unmock()
+        			
+     64 			assert(is_empty(filename1), "Expected first file to be empty after writing to it while fs is mocked")
+     64 			assert(is_empty(filename2), "Expected second file to be empty after writing to it while fs is mocked")
+        		end)
+        		
+******0 		it("should mock sys.*", function()
+        			--mock_fs.unmock()
+     32 			local ok = sys.save("filename1", { foo = "bar" })
+     32 			assert(ok)
+     32 			local t = sys.load("filename1")
+     32 			assert(t.foo == "bar")
+        		end)
+        		
+******0 		context("Mocked io.* functions", function()
+        		
+******0 			it("should not create any files until they are written to", function()
+        				--mock_fs.unmock()
+     64 				local f = io.open("ihopethisfiledoesnotexist" .. tostring(os.time()), "r")
+     32 				assert(not f)
+        			end)
+        			
+******0 			it("should allow the creation of a temporary file and it should be created automatically", function()
+        				--mock_fs.unmock()
+     64 				local f = io.open(os.tmpname(), "r")
+     32 				assert(f)
+        			end)
+        			
+******0 			it("should have a function to check if a file is open or closed", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     64 				assert(io.type(f) == "file")
+     32 				f:close()
+     64 				assert(io.type(f) == "closed file")
+        			end)
+        			
+******0 			it("should be able to read from and write to files", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("foobar")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     32 				local d = f:read("*a")
+     32 				f:close()
+     32 				assert(d == "foobar")
+        			end)
+        			
+******0 			it("should be able to append to files", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("foobar")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "a")
+     32 				f:write("foobar")
+     32 				f:close()
+        	
+     32 				local f = io.open(filename, "r")
+     32 				local d = f:read("*a")
+     32 				f:close()
+     32 				assert(d == "foobarfoobar")
+        			end)
+        			
+******0 			it("should only write to the end of the file in append update mode (a+) ", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("foobar")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "a+")
+     32 				f:seek("set", 3)	-- this will have no effect on the write below
+     32 				f:write("foobar")
+     64 				assert(f:seek("cur") == 12)
+     32 				f:close()
+        	
+     32 				local f = io.open(filename, "r")
+     32 				local d = f:read("*a")
+     32 				f:close()
+     32 				assert(d == "foobarfoobar", d)
+        			end)
+        			
+******0 			it("should be able to read line by line from a file", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("line1\nline2\nline3\n")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     64 				assert(f:read("*l") == "line1")
+     64 				assert(f:read("*l") == "line2")
+     64 				assert(f:read("*l") == "line3")
+     64 				assert(f:read("*l") == nil)
+        			end)
+        			
+******0 			it("should be able to read a certain number of characters from a file", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("abcde")
+     32 				f:close()	
+        				
+     32 				local f = io.open(filename, "r")
+     64 				assert(f:read(2) == "ab")
+     64 				assert(f:read(2) == "cd")
+     64 				assert(f:read(2) == "e")
+     64 				assert(f:read(2) == nil)
+        			end)
+        			
+******0 			it("should be able to read a number from a file", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("12a34.56b-78c-90.12d")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     64 				assert(f:read("*n") == 12)
+     64 				assert(f:read(1) == "a")
+     64 				assert(f:read("*n") == 34.56)
+     64 				assert(f:read(1) == "b")
+     64 				assert(f:read("*n") == -78)
+     64 				assert(f:read(1) == "c")
+     64 				assert(f:read("*n") == -90.12)
+     64 				assert(f:read(1) == "d")
+     64 				assert(f:read("*n") == nil)
+        			end)
+        			
+******0 			it("should be able to read lines from a file", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("line1\nline2\nline3\n")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     32 				local lines = {}
+    160 				for line in f:lines() do
+     96 					lines[#lines + 1] = line
+        				end
+     32 				assert(#lines == 3)
+     32 				assert(lines[1] == "line1")
+     32 				assert(lines[2] == "line2")
+     32 				assert(lines[3] == "line3")
+        			end)
+
+******0 			it("should be able to read multiple values in one call to io.read()", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     32 				f:write("abcline1\n123line3\nline4\n")
+     32 				f:close()
+        	
+     32 				local f = io.open(filename, "r")
+     32 				local r1, r2, r3, r4 = f:read(3, "*l", "*n", "*a")
+     32 				assert(r1 == "abc")
+     32 				assert(r2 == "line1")
+     32 				assert(r3 == 123)
+     32 				assert(r4 == "line3\nline4\n")
+        			end)
+
+******0 			it("should be able to write multiple values to a file", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     64 				assert(f:write("ab", "cd", "ef"))
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     64 				assert(f:read("*a") == "abcdef")
+        			end)
+
+******0 			it("should not be able to write in read mode", function()
+     64 				local f = io.open(os.tmpname(), "r")
+     32 				local ok, err = f:write("abc")
+     32 				assert(not ok and err)
+        			end)
+
+******0 			it("should not be able to read in write mode", function()
+     64 				local f = io.open(os.tmpname(), "w")
+     32 				local s, err = f:read()
+     32 				assert(not s and err)
+        			end)
+
+******0 			it("should not be able to read in append mode", function()
+     64 				local f = io.open(os.tmpname(), "a")
+     32 				local s, err = f:read()
+     32 				assert(not s and err)
+        			end)
+        			
+******0 			it("should be able to seek and read in a file", function()
+        				--mock_fs.unmock()
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     64 				assert(f:write("abcdefg"))
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     64 				assert(f:read("*a") == "abcdefg")
+     64 				assert(f:seek("set") == 0)
+     64 				assert(f:read("*a") == "abcdefg")
+     64 				assert(f:seek("set", 1) == 1)
+     64 				assert(f:read("*a") == "bcdefg")
+        	
+     32 				f:seek("set")
+     32 				f:seek("cur", 1)
+     64 				assert(f:read("*a") == "bcdefg")
+     32 				f:seek("cur", -1)
+     64 				assert(f:read("*a") == "g")
+     32 				f:seek("end", -1)
+     64 				assert(f:read("*a") == "g")
+        			end)
+        			
+******0 			it("should be able to seek and write in a file", function()
+        				--mock_fs.unmock()			
+     32 				local filename = os.tmpname()
+     32 				local f = io.open(filename, "w")
+     64 				assert(f:write("abcdefg"))
+     32 				f:seek("set", 1)
+     32 				f:write("x")
+     32 				f:close()
+        				
+     32 				local f = io.open(filename, "r")
+     64 				assert(f:read("*a") == "axcdefg")
+        			end)
+        		end)
+        	end)
+        end
+
+==============================================================================
+test/test_mock_gui.lua
+==============================================================================
+        return function()
+******0 	local mock_gui = require "deftest.mock.gui"
+
+******0 	describe("mock.gui", function()
+******0 		before(function()
+    341 			mock_gui.mock()
+        		end)
+
+******0 		after(function()
+    341 			mock_gui.unmock()
+        		end)
+
+******0 		it("should be able to create box nodes", function()
+     31 			local pos = vmath.vector3(10, 10, 0)
+     31 			local size = vmath.vector3(100, 100, 0)
+     31 			local node = gui.new_box_node(pos, size)
+     31 			assert(node)
+     62 			assert(gui.get_position(node) == pos)
+     62 			assert(gui.get_size(node) == size)
+        		end)
+
+******0 		it("should be able to get and set node scale", function()
+     31 			local node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			assert(node)
+     62 			assert(gui.get_scale(node) == vmath.vector3(1, 1, 1))
+
+     31 			local new_scale = vmath.vector3(2, 3, 4)
+     31 			gui.set_scale(node, new_scale)
+     62 			assert(gui.get_scale(node) == new_scale)
+        		end)
+
+******0 		it("should be able to get and set node size", function()
+     31 			local pos = vmath.vector3(10, 10, 0)
+     31 			local size = vmath.vector3(100, 100, 0)
+     31 			local node = gui.new_box_node(pos, size)
+     31 			assert(node)
+     62 			assert(gui.get_position(node) == pos)
+     62 			assert(gui.get_size(node) == size)
+
+     31 			local new_size = vmath.vector3(200, 200, 100)
+     31 			gui.set_size(node, new_size)
+     62 			assert(gui.get_size(node) == new_size)
+        		end)
+        				
+******0 		it("should be able to delete nodes", function()
+     31 			local node1 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local node2 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local id1 = gui.get_id(node1)
+     31 			local id2 = gui.get_id(node2)
+     31 			assert(node1)
+     31 			assert(node2)
+     31 			gui.delete_node(node1)
+     62 			assert(gui.get_node(id1) == nil)
+     62 			assert(gui.get_node(id2) == node2)
+        		end)
+
+******0 		it("should be able to parent nodes", function()
+     31 			local child = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local parent = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			gui.set_parent(child, parent)
+     62 			assert(gui.get_parent(child) == parent)
+        		end)
+
+******0 		it("should delete child nodes as well as the parent", function()
+     31 			local root = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local branch = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local twig = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local leaf = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local root_id = gui.get_id(root)
+     31 			local branch_id = gui.get_id(branch)
+     31 			local twig_id = gui.get_id(twig)
+     31 			local leaf_id = gui.get_id(leaf)
+     31 			gui.set_parent(leaf, twig)
+     31 			gui.set_parent(twig, branch)
+     31 			gui.set_parent(branch, root)
+     31 			gui.delete_node(branch)
+     62 			assert(gui.get_node(root_id))
+     62 			assert(not gui.get_node(branch_id))
+     62 			assert(not gui.get_node(twig_id))
+     62 			assert(not gui.get_node(leaf_id))
+        		end)
+
+******0 		it("should create nodes with unique ids", function()
+     31 			local node1 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local node2 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     93 			assert(gui.get_id(node1) ~= gui.get_id(node2))
+        		end)
+
+******0 		it("should be able to get and set a node id", function()
+     31 			local node1 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local node2 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			gui.set_id(node1, "foobar1")
+     31 			gui.set_id(node2, "foobar2")
+     62 			assert(gui.get_id(node1) == hash("foobar1"))
+     62 			assert(gui.get_id(node2) == hash("foobar2"))
+        		end)
+        				
+******0 		it("should be able to get a node based on id", function()
+     31 			local node1 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     31 			local node2 = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     93 			assert(gui.get_node(gui.get_id(node1)) == node1)
+     93 			assert(gui.get_node(gui.get_id(node2)) == node2)
+        		end)
+        		
+******0 		it("should be able to pick a box node", function()
+     31 			local pos = vmath.vector3(10, 10, 0)
+     31 			local size = vmath.vector3(100, 100, 0)
+     31 			local node = gui.new_box_node(pos, size)
+     62 			assert(not gui.pick_node(node, 0, 0))
+     62 			assert(gui.pick_node(node, pos.x, pos.y))
+     62 			assert(gui.pick_node(node, pos.x + size.x, pos.y + size.y))
+        		end)
+
+******0 		it("should be able to enable and disable a node", function()
+     31 			local node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+     62 			assert(gui.is_enabled(node))
+     31 			gui.set_enabled(node, false)
+     62 			assert(not gui.is_enabled(node))
+     31 			gui.set_enabled(node, true)
+     62 			assert(gui.is_enabled(node))
+        		end)
+
+        	end)
+        end
+
+==============================================================================
+test/test_mock_time.lua
+==============================================================================
+        return function()
+******0 	local mock_time = require "deftest.mock.time"
+        	
+******0 	describe("mock.time", function()
+******0 		before(function()
+     94 			mock_time.mock()
+        		end)
+        		
+******0 		after(function()
+     93 			mock_time.unmock()
+        		end)
+        		
+        		local function wait(time)
+     32 			go.cancel_animations(".", "position.z")
+     32 			local co = coroutine.running()
+     64 			go.animate(".", "position.z", go.PLAYBACK_ONCE_FORWARD, go.get_position().z, go.EASING_LINEAR, time, 0, function()
+     31 				coroutine.resume(co)
+        			end)
+     32 			coroutine.yield()
+        		end
+
+******0 		it("should not advance time automatically", function()
+     32 			local socket_gettime = socket.gettime()
+     32 			local os_time = os.time()
+     32 			local os_date = os.date()
+        			
+     32 			wait(1.5)
+        			
+     62 			assert(socket.gettime() == socket_gettime)
+     62 			assert(os.time() == os_time)
+     62 			assert(os.date() == os_date)
+        		end)
+        		
+******0 		it("should be able to set the time manually", function()
+     31 			mock_time.set(100.99)
+     62 			assert(socket.gettime() == 100.99)
+     62 			assert(os.time() == 100)
+     93 			assert(os.date() == os.date.original(nil, 100.99))
+        		end)
+        		
+******0 		it("should be able to elapse time manually", function()
+     31 			mock_time.set(100)
+     62 			assert(socket.gettime() == 100)
+     62 			assert(os.time() == 100)
+     93 			assert(os.date() == os.date.original(nil, 100))
+        			
+     31 			mock_time.elapse(2.99)
+     62 			assert(socket.gettime() == 102.99)
+     62 			assert(os.time() == 102)
+     93 			assert(os.date() == os.date.original(nil, 102.99))
+        		end)
+        	end)
+        end
+
+==============================================================================
+test/test_unload.lua
+==============================================================================
+        return function()
+******0 	local unload = require "deftest.util.unload"
+
+        	
+******0 	describe("unload.lua", function()
+******0 		before(function()
+        		end)
+
+******0 		after(function()
+        		end)
+
+******0 		it("should remove specific modules from loaded packages", function()
+     31 			local unload1_module_a = require "test.data.unload1.module_a"
+     31 			local unload1_module_b = require "test.data.unload1.module_b"
+     31 			local unload2_module_a = require "test.data.unload2.module_a"
+     31 			local unload2_module_b = require "test.data.unload2.module_b"
+     31 			unload1_module_a.foo = "foo1a"
+     31 			unload1_module_b.foo = "foo1b"
+     31 			unload2_module_a.foo = "foo2a"
+     31 			unload2_module_b.foo = "foo2b"
+        			
+     31 			unload("^test.data.unload1.*")
+     31 			unload1_module_a = require "test.data.unload1.module_a"
+     31 			unload1_module_b = require "test.data.unload1.module_b"
+     31 			unload2_module_a = require "test.data.unload2.module_a"
+     31 			unload2_module_b = require "test.data.unload2.module_b"
+
+     31 			assert(not unload1_module_a.foo)
+     31 			assert(not unload1_module_b.foo)
+     31 			assert(unload2_module_a.foo == "foo2a")
+     31 			assert(unload2_module_b.foo == "foo2b")
+        		end)
+        	end)
+        end
+
+==============================================================================
+test/test_vmath.lua
+==============================================================================
+        return function()
+******0 	describe("vmath", function()
+******0 		test("Add two vectors", function()
+     32 			local v1 = vmath.vector3(2, 3, 4)
+     32 			local v2 = vmath.vector3(5, 6, 7)
+     32 			local res = v1 + v2
+     32 			assert(res.x == 7 and res.y == 9 and res.z == 11)
+        		end)
+        	end)
+        end
+
+==============================================================================
+Summary
+==============================================================================
+
+File                           Hits Missed Coverage
+---------------------------------------------------
+deftest/deftest.lua            39   19     67.24%
+deftest/mock/fs.lua            141  83     62.95%
+deftest/mock/gui.lua           67   27     71.28%
+deftest/mock/mock.lua          43   4      91.49%
+deftest/mock/time.lua          19   11     63.33%
+deftest/telescope.lua          145  83     63.60%
+deftest/util/check.lua         37   7      84.09%
+deftest/util/unload.lua        4    3      57.14%
+test/data/unload1/module_a.lua 2    0      100.00%
+test/data/unload1/module_b.lua 2    0      100.00%
+test/data/unload2/module_a.lua 2    0      100.00%
+test/data/unload2/module_b.lua 2    0      100.00%
+test/telescope_spec.lua        26   21     55.32%
+test/telescope_syntax.lua      12   4      75.00%
+test/test.script               0    21     0.00%
+test/test_check.lua            23   5      82.14%
+test/test_http.lua             10   2      83.33%
+test/test_mock.lua             74   11     87.06%
+test/test_mock_fs.lua          162  27     85.71%
+test/test_mock_gui.lua         77   15     83.70%
+test/test_mock_time.lua        26   7      78.79%
+test/test_unload.lua           17   5      77.27%
+test/test_vmath.lua            4    2      66.67%
+---------------------------------------------------
+Total                          934  357    72.35%

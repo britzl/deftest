@@ -4,9 +4,8 @@
 -- @name luacov.reporter
 local reporter = {}
 
-local LineScanner = require("deftest.luacov.linescanner")
-local luacov = require("deftest.luacov.runner")
-local util = require("deftest.luacov.util")
+local LineScanner = require("luacov.linescanner")
+local util = require("luacov.util")
 
 ----------------------------------------------------------------
 --- Basic reporter class stub.
@@ -22,8 +21,8 @@ local util = require("deftest.luacov.util")
 local ReporterBase = {} do
 	ReporterBase.__index = ReporterBase
 
-	function ReporterBase:new(conf)
-		local stats = require("deftest.luacov.stats")
+	function ReporterBase:new(luacov, conf)
+		local stats = require("luacov.stats")
 		local data = stats.load(conf.statsfile)
 
 		if not data then
@@ -159,6 +158,7 @@ local ReporterBase = {} do
 	local deepactivelines
 
 	function ReporterBase:_run_file(filename)
+		print("run_file", filename)
 		local file, open_err = io.open(filename)
 
 		if not file then
@@ -190,6 +190,7 @@ local ReporterBase = {} do
 
 		self:on_new_file(filename)
 		local file_hits, file_miss = 0, 0
+		print("getting filedata for", filename)
 		local filedata = self:stats(filename)
 
 		local line_nr = 1
@@ -375,12 +376,13 @@ end
 -- methods will be called.
 -- The easiest way to implement a custom reporter class is to
 -- extend `ReporterBase`.
-function reporter.report(reporter_class)
+function reporter.report(luacov, reporter_class)
+	print("reporter.report")
 	local configuration = luacov.load_config()
 
 	reporter_class = reporter_class or DefaultReporter
 
-	local rep, err = reporter_class:new(configuration)
+	local rep, err = reporter_class:new(luacov, configuration)
 
 	if not rep then
 		print(err)

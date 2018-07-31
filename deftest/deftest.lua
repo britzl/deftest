@@ -17,7 +17,8 @@
 
 require "deftest.util.coxpcall"
 local telescope = require "deftest.telescope"
-local runner = require "deftest.luacov.runner"
+local runner = require "luacov.runner"
+local coverage_reporter = require "deftest.coverage.defoldreporter"
 
 local check = require "deftest.util.check"
 
@@ -63,6 +64,7 @@ function M.run(options)
 		runner.init({
 			codefromstrings = true,
 			runreport = true,
+			reporter = coverage_reporter,
 		 })
 	end
 	local co = coroutine.create(function()

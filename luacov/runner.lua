@@ -8,10 +8,11 @@ local runner = {}
 --- LuaCov version in `MAJOR.MINOR.PATCH` format.
 runner.version = "0.13.0"
 
-local stats = require("deftest.luacov.stats")
-local util = require("deftest.luacov.util")
-local hook = require("deftest.luacov.hook")
-runner.defaults = require("deftest.luacov.defaults")
+local stats = require("luacov.stats")
+local util = require("luacov.util")
+local hook = require("luacov.hook")
+local reporter = require("luacov.reporter")
+runner.defaults = require("luacov.defaults")
 
 local debug = _G.debug
 local raw_os_exit = os.exit
@@ -125,13 +126,11 @@ runner.debug_hook = hook.new(runner)
 -- The module must contain 'report' function, which is called without arguments.
 function runner.run_report(configuration)
 	configuration = runner.load_config(configuration)
-	local reporter = "luacov.reporter"
 
-	if configuration.reporter then
-		reporter = reporter .. "." .. configuration.reporter
-	end
-
-	require(reporter).report()
+	local ok, err = pcall(function()
+		reporter.report(runner, configuration.reporter)
+	end)
+	print(ok, err)
 end
 
 local on_exit_run_once = false

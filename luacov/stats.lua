@@ -57,12 +57,10 @@ end
 -- @param statsfile path to the stats file.
 -- @param data data to store.
 function stats.save(statsfile, data)
-	print("stats.save", statsfile)
 	local fd = assert(io.open(statsfile, "w"))
 
 	local filenames = {}
 	for filename in pairs(data) do
-		print("filenames", filename)
 		table.insert(filenames, filename)
 	end
 	table.sort(filenames)
@@ -77,7 +75,6 @@ function stats.save(statsfile, data)
 		fd:write("\n")
 	end
 	fd:close()
-	print("stats.save done")
 end
 
 return stats
