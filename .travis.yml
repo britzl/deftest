@@ -21,4 +21,5 @@ script:
   - "./.test/run.sh"
 
 after_success:
+  - bash ls -la
   - bash <(curl -s https://codecov.io/bash)
