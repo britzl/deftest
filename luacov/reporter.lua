@@ -19,223 +19,195 @@ local util = require("luacov.util")
 -- end
 -- @type ReporterBase
 local ReporterBase = {} do
-	ReporterBase.__index = ReporterBase
+ReporterBase.__index = ReporterBase
 
-	function ReporterBase:new(luacov, conf)
-		local stats = require("luacov.stats")
-		local data = stats.load(conf.statsfile)
+function ReporterBase:new(luacov, conf)
+   local stats = require("luacov.stats")
+   local data = stats.load(conf.statsfile)
 
-		if not data then
-			return nil, "Could not load stats file " .. conf.statsfile .. "."
-		end
+   if not data then
+      return nil, "Could not load stats file " .. conf.statsfile .. "."
+   end
 
-		local files = {}
-		local filtered_data = {}
-		local max_hits = 0
+   local files = {}
+   local filtered_data = {}
+   local max_hits = 0
 
-		-- Several original paths can map to one real path,
-		-- their stats should be merged in this case.
-		for filename, file_stats in pairs(data) do
-			if luacov.file_included(filename) then
-				filename = luacov.real_name(filename)
+   -- Several original paths can map to one real path,
+   -- their stats should be merged in this case.
+   for filename, file_stats in pairs(data) do
+      if luacov.file_included(filename) then
+         filename = luacov.real_name(filename)
 
-				if filtered_data[filename] then
-					luacov.update_stats(filtered_data[filename], file_stats)
-				else
-					table.insert(files, filename)
-					filtered_data[filename] = file_stats
-				end
+         if filtered_data[filename] then
+            luacov.update_stats(filtered_data[filename], file_stats)
+         else
+            table.insert(files, filename)
+            filtered_data[filename] = file_stats
+         end
 
-				max_hits = math.max(max_hits, filtered_data[filename].max_hits)
-			end
-		end
+         max_hits = math.max(max_hits, filtered_data[filename].max_hits)
+      end
+   end
 
-		table.sort(files)
+   table.sort(files)
 
-		local out, err = io.open(conf.reportfile, "w")
-		if not out then return nil, err end
+   local out, err = io.open(conf.reportfile, "w")
+   if not out then return nil, err end
 
-		local o = setmetatable({
-			_out  = out,
-			_cfg  = conf,
-			_data = filtered_data,
-			_files = files,
-			_mhit = max_hits,
-		}, self)
+   local o = setmetatable({
+      _out  = out,
+      _cfg  = conf,
+      _data = filtered_data,
+      _files = files,
+      _mhit = max_hits,
+   }, self)
 
-		return o
-	end
+   return o
+end
 
-	--- Returns configuration table.
-	-- @see luacov.defaults
-	function ReporterBase:config()
-		return self._cfg
-	end
+--- Returns configuration table.
+-- @see luacov.defaults
+function ReporterBase:config()
+   return self._cfg
+end
 
-	--- Returns maximum number of hits per line in all coverage data.
-	function ReporterBase:max_hits()
-		return self._mhit
-	end
+--- Returns maximum number of hits per line in all coverage data.
+function ReporterBase:max_hits()
+   return self._mhit
+end
 
-	--- Writes strings to report file.
-	-- @param ... strings.
-	function ReporterBase:write(...)
-		return self._out:write(...)
-	end
+--- Writes strings to report file.
+-- @param ... strings.
+function ReporterBase:write(...)
+   return self._out:write(...)
+end
 
-	function ReporterBase:close()
-		self._out:close()
-		self._private = nil
-	end
+function ReporterBase:close()
+   self._out:close()
+   self._private = nil
+end
 
-	--- Returns array of filenames to be reported.
-	function ReporterBase:files()
-		return self._files
-	end
+--- Returns array of filenames to be reported.
+function ReporterBase:files()
+   return self._files
+end
 
-	--- Returns coverage data for a file.
-	-- @param filename name of the file.
-	-- @see luacov.stats.load
-	function ReporterBase:stats(filename)
-		return self._data[filename]
-	end
+--- Returns coverage data for a file.
+-- @param filename name of the file.
+-- @see luacov.stats.load
+function ReporterBase:stats(filename)
+   return self._data[filename]
+end
 
-	-- Stub methods follow.
-	-- luacheck: push no unused args
+-- Stub methods follow.
+-- luacheck: push no unused args
 
-	--- Stub method called before reporting.
-	function ReporterBase:on_start()
-	end
+--- Stub method called before reporting.
+function ReporterBase:on_start()
+end
 
-	--- Stub method called before processing a file.
-	-- @param filename name of the file.
-	function ReporterBase:on_new_file(filename)
-	end
+--- Stub method called before processing a file.
+-- @param filename name of the file.
+function ReporterBase:on_new_file(filename)
+end
 
-	--- Stub method called if a file couldn't be processed due to an error.
-	-- @param filename name of the file.
-	-- @param error_type "open", "read" or "load".
-	-- @param message error message.
-	function ReporterBase:on_file_error(filename, error_type, message)
-	end
+--- Stub method called if a file couldn't be processed due to an error.
+-- @param filename name of the file.
+-- @param error_type "open", "read" or "load".
+-- @param message error message.
+function ReporterBase:on_file_error(filename, error_type, message)
+end
 
-	--- Stub method called for each empty source line
-	-- and other lines that can't be hit.
-	-- @param filename name of the file.
-	-- @param lineno line number.
-	-- @param line the line itself as a string.
-	function ReporterBase:on_empty_line(filename, lineno, line)
-	end
+--- Stub method called for each empty source line
+-- and other lines that can't be hit.
+-- @param filename name of the file.
+-- @param lineno line number.
+-- @param line the line itself as a string.
+function ReporterBase:on_empty_line(filename, lineno, line)
+end
 
-	--- Stub method called for each missed source line.
-	-- @param filename name of the file.
-	-- @param lineno line number.
-	-- @param line the line itself as a string.
-	function ReporterBase:on_mis_line(filename, lineno, line)
-	end
+--- Stub method called for each missed source line.
+-- @param filename name of the file.
+-- @param lineno line number.
+-- @param line the line itself as a string.
+function ReporterBase:on_mis_line(filename, lineno, line)
+end
 
-	--- Stub method called for each hit source line.
-	-- @param filename name of the file.
-	-- @param lineno line number.
-	-- @param line the line itself as a string.
-	-- @param hits number of times the line was hit. Should be positive.
-	function ReporterBase:on_hit_line(filename, lineno, line, hits)
-	end
+--- Stub method called for each hit source line.
+-- @param filename name of the file.
+-- @param lineno line number.
+-- @param line the line itself as a string.
+-- @param hits number of times the line was hit. Should be positive.
+function ReporterBase:on_hit_line(filename, lineno, line, hits)
+end
 
-	--- Stub method called after a file has been processed.
-	-- @param filename name of the file.
-	-- @param hits total number of hit lines in the file.
-	-- @param miss total number of missed lines in the file.
-	function ReporterBase:on_end_file(filename, hits, miss)
-	end
+--- Stub method called after a file has been processed.
+-- @param filename name of the file.
+-- @param hits total number of hit lines in the file.
+-- @param miss total number of missed lines in the file.
+function ReporterBase:on_end_file(filename, hits, miss)
+end
 
-	--- Stub method called after reporting.
-	function ReporterBase:on_end()
-	end
+--- Stub method called after reporting.
+function ReporterBase:on_end()
+end
 
-	-- luacheck: pop
+-- luacheck: pop
 
-	local deepactivelines
+function ReporterBase:_run_file(filename)
+   local file, open_err = io.open(filename)
 
-	function ReporterBase:_run_file(filename)
-		print("run_file", filename)
-		local file, open_err = io.open(filename)
+   if not file then
+      self:on_file_error(filename, "open", util.unprefix(open_err, filename .. ": "))
+      return
+   end
 
-		if not file then
-			self:on_file_error(filename, "open", util.unprefix(open_err, filename .. ": "))
-			return
-		end
+   local active_lines
 
-		local active_lines
+   self:on_new_file(filename)
+   local file_hits, file_miss = 0, 0
+   local filedata = self:stats(filename)
 
-		if cluacov_ok then
-			local src, read_err = file:read("*a")
+   local line_nr = 1
+   local scanner = LineScanner:new()
 
-			if not src then
-				self:on_file_error(filename, "read", read_err)
-				return
-			end
+   while true do
+      local line = file:read("*l")
+      if not line then break end
 
-			src = src:gsub("^#![^\n]*", "")
-			local func, load_err = util.load_string(src, nil, "@file")
+      local always_excluded, excluded_when_not_hit = scanner:consume(line)
+      local hits = filedata[line_nr] or 0
+      local included = not always_excluded and (not excluded_when_not_hit or hits ~= 0)
 
-			if not func then
-				self:on_file_error(filename, "load", "line " .. util.unprefix(load_err, "file:"))
-				return
-			end
+      if included then
+         if hits == 0 then
+            self:on_mis_line(filename, line_nr, line)
+            file_miss = file_miss + 1
+         else
+            self:on_hit_line(filename, line_nr, line, hits)
+            file_hits = file_hits + 1
+         end
+      else
+         self:on_empty_line(filename, line_nr, line)
+      end
 
-			active_lines = deepactivelines.get(func)
-			file:seek("set")
-		end
+      line_nr = line_nr + 1
+   end
 
-		self:on_new_file(filename)
-		local file_hits, file_miss = 0, 0
-		print("getting filedata for", filename)
-		local filedata = self:stats(filename)
+   file:close()
+   self:on_end_file(filename, file_hits, file_miss)
+end
 
-		local line_nr = 1
-		local scanner = LineScanner:new()
+function ReporterBase:run()
+   self:on_start()
 
-		while true do
-			local line = file:read("*l")
-			if not line then break end
+   for _, filename in ipairs(self:files()) do
+      self:_run_file(filename)
+   end
 
-			local always_excluded, excluded_when_not_hit = scanner:consume(line)
-			local hits = filedata[line_nr] or 0
-			local included = not always_excluded and (not excluded_when_not_hit or hits ~= 0)
-
-			if cluacov_ok then
-				included = included and active_lines[line_nr]
-			end
-
-			if included then
-				if hits == 0 then
-					self:on_mis_line(filename, line_nr, line)
-					file_miss = file_miss + 1
-				else
-					self:on_hit_line(filename, line_nr, line, hits)
-					file_hits = file_hits + 1
-				end
-			else
-				self:on_empty_line(filename, line_nr, line)
-			end
-
-			line_nr = line_nr + 1
-		end
-
-		file:close()
-		self:on_end_file(filename, file_hits, file_miss)
-	end
-
-	function ReporterBase:run()
-		self:on_start()
-
-		for _, filename in ipairs(self:files()) do
-			self:_run_file(filename)
-		end
-
-		self:on_end()
-	end
+   self:on_end()
+end
 
 end
 --- @section end
@@ -243,125 +215,125 @@ end
 
 ----------------------------------------------------------------
 local DefaultReporter = setmetatable({}, ReporterBase) do
-	DefaultReporter.__index = DefaultReporter
+DefaultReporter.__index = DefaultReporter
 
-	function DefaultReporter:on_start()
-		local most_hits = self:max_hits()
-		local most_hits_length = #("%d"):format(most_hits)
+function DefaultReporter:on_start()
+   local most_hits = self:max_hits()
+   local most_hits_length = #("%d"):format(most_hits)
 
-		self._summary      = {}
-		self._empty_format = (" "):rep(most_hits_length + 1)
-		self._zero_format  = ("*"):rep(most_hits_length).."0"
-		self._count_format = ("%% %dd"):format(most_hits_length+1)
-		self._printed_first_header = false
-	end
+   self._summary      = {}
+   self._empty_format = (" "):rep(most_hits_length + 1)
+   self._zero_format  = ("*"):rep(most_hits_length).."0"
+   self._count_format = ("%% %dd"):format(most_hits_length+1)
+   self._printed_first_header = false
+end
 
-	function DefaultReporter:on_new_file(filename)
-		self:write(("="):rep(78), "\n")
-		self:write(filename, "\n")
-		self:write(("="):rep(78), "\n")
-	end
+function DefaultReporter:on_new_file(filename)
+   self:write(("="):rep(78), "\n")
+   self:write(filename, "\n")
+   self:write(("="):rep(78), "\n")
+end
 
-	function DefaultReporter:on_file_error(filename, error_type, message) --luacheck: no self
-		io.stderr:write(("Couldn't %s %s: %s\n"):format(error_type, filename, message))
-	end
+function DefaultReporter:on_file_error(filename, error_type, message) --luacheck: no self
+   io.stderr:write(("Couldn't %s %s: %s\n"):format(error_type, filename, message))
+end
 
-	function DefaultReporter:on_empty_line(_, _, line)
-		if line == "" then
-			self:write("\n")
-		else
-			self:write(self._empty_format, " ", line, "\n")
-		end
-	end
+function DefaultReporter:on_empty_line(_, _, line)
+   if line == "" then
+      self:write("\n")
+   else
+      self:write(self._empty_format, " ", line, "\n")
+   end
+end
 
-	function DefaultReporter:on_mis_line(_, _, line)
-		self:write(self._zero_format, " ", line, "\n")
-	end
+function DefaultReporter:on_mis_line(_, _, line)
+   self:write(self._zero_format, " ", line, "\n")
+end
 
-	function DefaultReporter:on_hit_line(_, _, line, hits)
-		self:write(self._count_format:format(hits), " ", line, "\n")
-	end
+function DefaultReporter:on_hit_line(_, _, line, hits)
+   self:write(self._count_format:format(hits), " ", line, "\n")
+end
 
-	function DefaultReporter:on_end_file(filename, hits, miss)
-		self._summary[filename] = { hits = hits, miss = miss }
-		self:write("\n")
-	end
+function DefaultReporter:on_end_file(filename, hits, miss)
+   self._summary[filename] = { hits = hits, miss = miss }
+   self:write("\n")
+end
 
-	local function coverage_to_string(hits, missed)
-		local total = hits + missed
+local function coverage_to_string(hits, missed)
+   local total = hits + missed
 
-		if total == 0 then
-			total = 1
-		end
+   if total == 0 then
+      total = 1
+   end
 
-		return ("%.2f%%"):format(hits/total*100.0)
-	end
+   return ("%.2f%%"):format(hits/total*100.0)
+end
 
-	function DefaultReporter:on_end()
-		self:write(("="):rep(78), "\n")
-		self:write("Summary\n")
-		self:write(("="):rep(78), "\n")
-		self:write("\n")
+function DefaultReporter:on_end()
+   self:write(("="):rep(78), "\n")
+   self:write("Summary\n")
+   self:write(("="):rep(78), "\n")
+   self:write("\n")
 
-		local lines = {{"File", "Hits", "Missed", "Coverage"}}
-		local total_hits, total_missed = 0, 0
+   local lines = {{"File", "Hits", "Missed", "Coverage"}}
+   local total_hits, total_missed = 0, 0
 
-		for _, filename in ipairs(self:files()) do
-			local summary = self._summary[filename]
+   for _, filename in ipairs(self:files()) do
+      local summary = self._summary[filename]
 
-			if summary then
-				local hits, missed = summary.hits, summary.miss
+      if summary then
+         local hits, missed = summary.hits, summary.miss
 
-				table.insert(lines, {
-					filename,
-					tostring(summary.hits),
-					tostring(summary.miss),
-					coverage_to_string(hits, missed)
-				})
+         table.insert(lines, {
+            filename,
+            tostring(summary.hits),
+            tostring(summary.miss),
+            coverage_to_string(hits, missed)
+         })
 
-				total_hits = total_hits + hits
-				total_missed = total_missed + missed
-			end
-		end
+         total_hits = total_hits + hits
+         total_missed = total_missed + missed
+      end
+   end
 
-		table.insert(lines, {
-			"Total",
-			tostring(total_hits),
-			tostring(total_missed),
-			coverage_to_string(total_hits, total_missed)
-		})
+   table.insert(lines, {
+      "Total",
+      tostring(total_hits),
+      tostring(total_missed),
+      coverage_to_string(total_hits, total_missed)
+   })
 
-		local max_column_lengths = {}
+   local max_column_lengths = {}
 
-		for _, line in ipairs(lines) do
-			for column_nr, column in ipairs(line) do
-				max_column_lengths[column_nr] = math.max(max_column_lengths[column_nr] or -1, #column)
-			end
-		end
+   for _, line in ipairs(lines) do
+      for column_nr, column in ipairs(line) do
+         max_column_lengths[column_nr] = math.max(max_column_lengths[column_nr] or -1, #column)
+      end
+   end
 
-		local table_width = #max_column_lengths - 1
+   local table_width = #max_column_lengths - 1
 
-		for _, column_length in ipairs(max_column_lengths) do
-			table_width = table_width + column_length
-		end
+   for _, column_length in ipairs(max_column_lengths) do
+      table_width = table_width + column_length
+   end
 
 
-		for line_nr, line in ipairs(lines) do
-			if line_nr == #lines or line_nr == 2 then
-				self:write(("-"):rep(table_width), "\n")
-			end
+   for line_nr, line in ipairs(lines) do
+      if line_nr == #lines or line_nr == 2 then
+         self:write(("-"):rep(table_width), "\n")
+      end
 
-			for column_nr, column in ipairs(line) do
-				self:write(column)
+      for column_nr, column in ipairs(line) do
+         self:write(column)
 
-				if column_nr == #line then
-					self:write("\n")
-				else
-					self:write((" "):rep(max_column_lengths[column_nr] - #column + 1))
-				end
-			end
-		end
-	end
+         if column_nr == #line then
+            self:write("\n")
+         else
+            self:write((" "):rep(max_column_lengths[column_nr] - #column + 1))
+         end
+      end
+   end
+end
 
 end
 ----------------------------------------------------------------
@@ -377,26 +349,25 @@ end
 -- The easiest way to implement a custom reporter class is to
 -- extend `ReporterBase`.
 function reporter.report(luacov, reporter_class)
-	print("reporter.report")
-	local configuration = luacov.load_config()
+   local configuration = luacov.load_config()
 
-	reporter_class = reporter_class or DefaultReporter
+   reporter_class = reporter_class or DefaultReporter
 
-	local rep, err = reporter_class:new(luacov, configuration)
+   local rep, err = reporter_class:new(luacov, configuration)
 
-	if not rep then
-		print(err)
-		print("Run your Lua program with -lluacov and then rerun luacov.")
-		os.exit(1)
-	end
+   if not rep then
+      print(err)
+      print("Run your Lua program with -lluacov and then rerun luacov.")
+      os.exit(1)
+   end
 
-	rep:run()
+   rep:run()
 
-	rep:close()
+   rep:close()
 
-	if configuration.deletestats then
-		os.remove(configuration.statsfile)
-	end
+   if configuration.deletestats then
+      os.remove(configuration.statsfile)
+   end
 end
 
 reporter.ReporterBase    = ReporterBase

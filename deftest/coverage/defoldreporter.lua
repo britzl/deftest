@@ -4,6 +4,7 @@ local DefoldReporter = setmetatable({}, reporter.DefaultReporter) do
 	DefoldReporter.__index = DefoldReporter
 
 	function DefoldReporter:run()
+		print("Generating code coverage report")
 		self:on_start()
 
 		-- convert filenames to match those on disk
@@ -19,11 +20,13 @@ local DefoldReporter = setmetatable({}, reporter.DefaultReporter) do
 		end
 		
 		for _, filename in ipairs(self:files()) do
+			-- check if file exists
 			local file = io.open(filename, "r")
 			if file then
+				print("  Processing:", filename)
 				self:_run_file(filename)
 			else
-				print("Skipping file:", filename)
+				print("  Skipping:", filename)
 			end
 		end
 

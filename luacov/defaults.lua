@@ -6,7 +6,6 @@
 -- @name luacov.defaults
 return {
 
-
   --- Filename to store collected stats. Default: "luacov.stats.out".
   statsfile = "luacov.stats.out",
 

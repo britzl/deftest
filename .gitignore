@@ -9,3 +9,4 @@ build
 builtins
 .internal
 luacov.stats.out
+luacov.report.out
