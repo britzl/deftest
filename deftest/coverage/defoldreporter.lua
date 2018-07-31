@@ -12,11 +12,11 @@ local DefoldReporter = setmetatable({}, reporter.DefaultReporter) do
 		-- from files on disk when run in Defold
 		local d = {}
 		for filename,stats in pairs(self._data) do
-			d[filename:gsub("=/", "")] = stats
+			d[filename:gsub("=/", ""):gsub("=", "")] = stats
 		end
 		self._data = d
 		for i,filename in pairs(self._files) do
-			self._files[i] = filename:gsub("=/", "")
+			self._files[i] = filename:gsub("=/", ""):gsub("=", "")
 		end
 		
 		for _, filename in ipairs(self:files()) do
