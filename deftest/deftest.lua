@@ -17,8 +17,7 @@
 
 require "deftest.util.coxpcall"
 local telescope = require "deftest.telescope"
-local runner = require "luacov.runner"
-local coverage_reporter = require "deftest.coverage.defoldreporter"
+local luacov_runner = require "luacov.runner"
 
 local check = require "deftest.util.check"
 
@@ -60,16 +59,8 @@ end
 function M.run(options)
 	options = options or {}
 	print("Code coverage:", options.coverage and "enabled" or "disabled")
-	if options.coverage then
-		runner.init({
-			codefromstrings = true,
-			runreport = true,
-			exclude = {
-				"luacov.*",
-				"deftest.*",
-			},
-			reporter = coverage_reporter,
-		 })
+	if options.coverage.enabled then
+		luacov_runner.init(options.coverage.configuration)
 	end
 	local co = coroutine.create(function()
 		local callbacks = {}
