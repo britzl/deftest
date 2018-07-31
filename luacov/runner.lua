@@ -275,12 +275,12 @@ local luacov_excludes = {
    "luacov$",
    "luacov/hook$",
    "luacov/reporter$",
-   "luacov/reporter/default$",
    "luacov/defaults$",
    "luacov/runner$",
    "luacov/stats$",
    "luacov/tick$",
    "luacov/util$",
+   "luacov/linescanner$",
 }
 
 local function is_absolute(path)
