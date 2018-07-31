@@ -17,6 +17,8 @@
 
 require "deftest.util.coxpcall"
 local telescope = require "deftest.telescope"
+local runner = require "luacov.runner"
+local coverage_reporter = require "deftest.coverage.defoldreporter"
 
 local check = require "deftest.util.check"
 
@@ -55,7 +57,20 @@ end
 --- Run all tests added via @{add}
 -- The engine will shut down with an exit code indicating success or
 -- failure and the test reports will be written to console.
-function M.run()
+function M.run(options)
+	options = options or {}
+	print("Code coverage:", options.coverage and "enabled" or "disabled")
+	if options.coverage then
+		runner.init({
+			codefromstrings = true,
+			runreport = true,
+			exclude = {
+				"luacov.*",
+				"deftest.*",
+			},
+			reporter = coverage_reporter,
+		 })
+	end
 	local co = coroutine.create(function()
 		local callbacks = {}
 		local test_pattern = nil

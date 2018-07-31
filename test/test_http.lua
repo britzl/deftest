@@ -11,7 +11,7 @@ return function()
 
 	describe("http", function()
 		test("http.request should return a response and status code", function()
-			local id, response = http_request("http://www.google.com", "GET")
+			local id, response = http_request("https://www.defold.com", "GET", nil, nil, nil, { timeout = 1 })
 			assert(response)
 			assert(response.status)
 			assert(response.response)

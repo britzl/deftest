@@ -8,3 +8,5 @@ build
 .cproject
 builtins
 .internal
+luacov.stats.out
+luacov.report.out
