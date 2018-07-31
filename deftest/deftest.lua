@@ -64,6 +64,10 @@ function M.run(options)
 		runner.init({
 			codefromstrings = true,
 			runreport = true,
+			exclude = {
+				"luacov.*",
+				"deftest.*",
+			},
 			reporter = coverage_reporter,
 		 })
 	end
