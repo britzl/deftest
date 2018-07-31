@@ -58,6 +58,7 @@ end
 -- failure and the test reports will be written to console.
 function M.run(options)
 	options = options or {}
+	print("Code coverage:", options.coverage and "enabled" or "disabled")
 	if options.coverage then
 		runner.init({ codefromstrings = true })
 	end
