@@ -59,5 +59,12 @@ The tests in this project are run on [Travis-CI](https://travis-ci.org/britzl/de
 
 For an up-to-date version of the script and steps needed to run on Travis-CI please refer to the [defold-travis-ci](https://github.com/britzl/defold-travis-ci) project.
 
+### Code coverage
+DefTest can collect code coverage stats to measure how much of your code that is tested. Code coverage data is collected using [LuaCov](https://github.com/keplerproject/luacov), specifically code [from a LuaCov fork](https://github.com/britzl/luacov) where the code has undergone some minor alterations to work well with Defold. Code coverage is not automatically collected. You can enable code coverage collection like this:
+
+    deftest.run({ coverage = true })
+
+When the tests have completed a code coverage report will be generated to `luacov.report.out` and raw stats to `luacov.stats.out`. The report can be uploaded directly to a service such as [codecov.io](https://codecov.io) or the stats can be formatted into a report format accepted by other services such as [coveralls.io](http://coveralls.io/).
+
 ## Limitations
 Unit testing in Defold works best when testing Lua modules containing pure logic. Testing script and gui_script files is more related to integration tests as it not only involves your code, but also visual components and interaction between the different game objects and the systems provided by the engine. If your scripts contains complex code that you wish to test it is recommended to move the code to a Lua module and test just that module.

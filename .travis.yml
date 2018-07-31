@@ -21,6 +21,4 @@ script:
   - "./.test/run.sh"
 
 after_success:
-  - ls -la
-  - cat luacov.report.out
   - bash <(curl -s https://codecov.io/bash)
