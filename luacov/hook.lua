@@ -31,7 +31,6 @@ function hook.new(runner)
          -- Ignore Lua code loaded from raw strings by default.
          return
     end
-    print(name)
 
       local data = runner.data
       local file = data[name]
@@ -43,8 +42,10 @@ function hook.new(runner)
          elseif runner.file_included(name) then
             file = {max = 0, max_hits = 0}
             data[name] = file
+            print("included", name)
          else
             ignored_files[name] = true
+            print("ignored", name)
             return
          end
       end
