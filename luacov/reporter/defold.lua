@@ -10,11 +10,22 @@ local function exists(filename)
 end
 
 local function fix_filename(filename)
-	local filename = filename:gsub("^=", "")
+	local filename = filename:gsub("^=/", ""):gsub("^=", "")
 	if exists(filename) then
 		return filename
 	end
-	-- foo.bar -> foo/bar.lua
+
+	local path, extension = filename:match("(.*)%.(%a*)$")
+	if path and extension then
+		path = path:gsub("%.", "/")
+		local parsed_name = path .. "." .. extension
+		print(filename, parsed_name)
+		if exists(parsed_name) then
+			return parsed_name
+		end
+	end
+	return filename
+--[[	-- foo.bar -> foo/bar.lua
 	local parsed_name = filename:gsub("%.", "/")..".lua"
 	if exists(parsed_name) then
 		return parsed_name
@@ -34,7 +45,7 @@ local function fix_filename(filename)
 	if exists(parsed_name) then
 		return parsed_name
 	end
-	return filename
+	return filename--]]
 end
 
 local DefoldReporter = setmetatable({}, reporter.DefaultReporter) do
