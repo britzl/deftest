@@ -58,7 +58,7 @@ end
 -- failure and the test reports will be written to console.
 function M.run(options)
 	options = options or {}
-	print("Code coverage:", options.coverage and "enabled" or "disabled")
+	print("Code coverage:", options.coverage and options.coverage.enabled and "enabled" or "disabled")
 	if options.coverage.enabled then
 		luacov_runner.init(options.coverage.configuration)
 	end
