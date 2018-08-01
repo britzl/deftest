@@ -58,7 +58,9 @@ function runner.file_included(filename)
    -- Normalize file names before using patterns.
    filename = string.gsub(filename, "\\", "/")
    filename = string.gsub(filename, "%.lua$", "")
-   filename = string.gsub(filename, "%.%a*$", "") -- strip other extension types than .lua
+   filename = string.gsub(filename, "%.script$", "") -- strip Defold script files
+   filename = string.gsub(filename, "%.gui_script$", "") -- strip Defold gui script files
+   filename = string.gsub(filename, "%.render_script$", "") -- strip Defold render script files
    filename = string.gsub(filename, "^=/", "") -- strip Defold archive filename
    filename = string.gsub(filename, "^=", "") -- strip Defold archive filename
    filename = string.gsub(filename, "%.", "/") -- dot path separator to slash
