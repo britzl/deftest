@@ -55,12 +55,14 @@ end
 -- @param filename name of the file.
 -- @return true if file is included, false otherwise.
 function runner.file_included(filename)
+    local before = filename
    -- Normalize file names before using patterns.
    filename = string.gsub(filename, "\\", "/")
    filename = string.gsub(filename, "%.lua$", "")
    filename = string.gsub(filename, "%.%a*$", "") -- strip other extension types than .lua
    filename = string.gsub(filename, "=", "") -- strip Defold archive filename
    filename = string.gsub(filename, "%.", "/") -- dot path separator to slash
+   print("file_included", before, "->", filename)
 
    -- If include list is empty, everything is included by default.
    -- If exclude list is empty, nothing is excluded by default.
