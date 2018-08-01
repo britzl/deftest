@@ -62,7 +62,6 @@ function runner.file_included(filename)
    filename = string.gsub(filename, "=", "") -- strip Defold archive filename
    filename = string.gsub(filename, "%.", "/") -- dot path separator to slash
 
-print("runner.file_included", filename)
    -- If include list is empty, everything is included by default.
    -- If exclude list is empty, nothing is excluded by default.
    return match_any(runner.configuration.include, filename, true) and
