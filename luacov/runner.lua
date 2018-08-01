@@ -58,6 +58,9 @@ function runner.file_included(filename)
    -- Normalize file names before using patterns.
    filename = string.gsub(filename, "\\", "/")
    filename = string.gsub(filename, "%.lua$", "")
+   filename = string.gsub(filename, "%.%a*$", "") -- strip other extension types than .lua
+   filename = string.gsub(filename, "=", "") -- strip Defold archive filename
+   filename = string.gsub(filename, "%.", "/") -- dot path separator to slash
 
    -- If include list is empty, everything is included by default.
    -- If exclude list is empty, nothing is excluded by default.

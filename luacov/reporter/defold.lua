@@ -10,10 +10,11 @@ local function exists(filename)
 end
 
 local function fix_filename(filename)
-	local filename = filename:gsub("^=", "")
+	local filename = filename:gsub("^=/", ""):gsub("^=", "")
 	if exists(filename) then
 		return filename
 	end
+
 	-- foo.bar -> foo/bar.lua
 	local parsed_name = filename:gsub("%.", "/")..".lua"
 	if exists(parsed_name) then

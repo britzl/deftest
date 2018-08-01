@@ -33,7 +33,7 @@ return {
   runreport = true,
 
   --- Delete stats file after reporting? Default: false.
-  deletestats = false,
+  deletestats = true,
 
   --- Process Lua code loaded from raw strings?
   -- That is, when the 'source' field in the debug info
@@ -55,7 +55,7 @@ return {
   -- Nothing will be excluded if nothing is listed.
   -- Do not include the '.lua' extension. Path separator is always '/'.
   -- Overrules `include`.
-  exclude = { "^=/test%/.+$" },
+  exclude = { "^test%/.+$" },
 
   --- Table mapping names of modules to be included to their filenames.
   -- Has no effect if empty.
