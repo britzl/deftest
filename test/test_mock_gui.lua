@@ -1,6 +1,14 @@
 return function()
 	local mock_gui = require "deftest.mock.gui"
 
+	local function animate(node, property, to, easing, duration, delay, callback, playback)
+		local co = coroutine.running()
+		gui.animate(node, property, to, easing, duration, delay, function(...)
+			coroutine.resume(co)
+		end, playback)
+		coroutine.yield()
+	end
+
 	describe("mock.gui", function()
 		before(function()
 			mock_gui.mock()
@@ -120,5 +128,20 @@ return function()
 			assert(gui.is_enabled(node))
 		end)
 
+		it("should be able to animate a node", function()
+			local node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+			local to = vmath.vector3(50, 80, 0)
+			animate(node, gui.PROP_POSITION, to, gui.EASING_LINEAR, 1)
+			assert(node.position == to)
+		end)
+
+		it("should be able to cancel an animation on a node", function()
+			local node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+			local to = vmath.vector3(50, 80, 0)
+			gui.animate(node, gui.PROP_POSITION, to, gui.EASING_LINEAR, 1)
+			gui.cancel_animation(node, gui.PROP_POSITION)
+			assert(node.position ~= to)
+		end)
+				
 	end)
 end

@@ -21,8 +21,10 @@ local function new_node(id, node_type, x, y, z, w, h)
 		size = vmath.vector3(w or 1, h or 1, 0),
 		scale = vmath.vector3(1, 1, 1),
 		rotation = vmath.quat(),
+		color = vmath.vector4(1, 1, 1, 1),
 		enabled = true,
 		parent = nil,
+		animations = {},
 	}
 	nodes[id] = node
 	return node
@@ -142,6 +144,44 @@ local function new_text_node(pos, text)
 	return node
 end
 
+local function animate(node, property, to, easing, duration, delay, callback, playback)
+	if node.animations[property] then
+		timer.cancel(node.animations[property])
+	end
+	local timer_id = timer.delay(duration, false, function()
+		if property == gui.PROP_COLOR then
+			node.color = vmath.vector4(to)
+		elseif property == gui.PROP_FILL_ANGLE then
+			error("Not implemented")
+		elseif property == gui.PROP_INNER_RADIUS then
+			error("Not implemented")
+		elseif property == gui.PROP_OUTLINE then
+			error("Not implemented")
+		elseif property == gui.PROP_POSITION then
+			node.position = vmath.vector3(to)
+		elseif property == gui.PROP_ROTATION then
+			node.rotation = vmath.quat(to)
+		elseif property == gui.PROP_SCALE then
+			node.scale = vmath.vector3(to)
+		elseif property == gui.PROP_SHADOW then
+			error("Not implemented")
+		elseif property == gui.PROP_SIZE then
+			node.size = vmath.vector3(to)
+		elseif property == gui.PROP_SLICE9 then
+			error("Not implemented")
+		end
+		callback({}, node)
+	end)
+	node.animations[property] = timer_id
+end
+
+local function cancel_animation(node, property)
+	if node.animations[property] then
+		timer.cancel(node.animations[property])
+		node.animations[property] = nil
+	end
+end
+
 function M.mock()
 	mock.mock(gui)
 	gui.get_node.replace(get_node)
@@ -178,6 +218,9 @@ function M.mock()
 	
 	gui.new_box_node.replace(new_box_node)
 	gui.new_text_node.replace(new_text_node)
+
+	gui.animate.replace(animate)
+	gui.cancel_animation.replace(cancel_animation)
 end
 
 function M.unmock()
