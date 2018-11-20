@@ -30,6 +30,30 @@ local function new_node(id, node_type, x, y, z, w, h)
 	return node
 end
 
+local function clone(node)
+	local clone = {}
+	clone.id = hash("")
+	clone.x = node.x
+	clone.y = node.y
+	clone.w = node.w
+	clone.h = node.h
+	clone.position = vmath.vector3(node.position)
+	clone.size = vmath.vector3(node.size)
+	clone.scale = vmath.vector3(node.scale)
+	clone.rotation = vmath.quat(node.rotation)
+	clone.color = vmath.vector4(node.color)
+	clone.enabled = node.enabled
+	clone.parent = node.parent
+	clone.animations = {}
+	for k,v in pairs(node) do
+		if clone[k] == nil then
+			clone[k] = v
+		end
+	end
+	nodes[clone.id] = clone
+	return clone
+end
+
 local function screen_position(node, position)
 	local position = vmath.vector3(node.position)
 	if node.parent then
@@ -218,6 +242,8 @@ function M.mock()
 	
 	gui.new_box_node.replace(new_box_node)
 	gui.new_text_node.replace(new_text_node)
+
+	gui.clone.replace(clone)
 
 	gui.animate.replace(animate)
 	gui.cancel_animation.replace(cancel_animation)

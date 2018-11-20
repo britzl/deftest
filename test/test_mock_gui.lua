@@ -27,6 +27,32 @@ return function()
 			assert(gui.get_size(node) == size)
 		end)
 
+		it("should be able to create text nodes", function()
+			local pos = vmath.vector3(10, 10, 0)
+			local text = "Hello"
+			local node = gui.new_text_node(pos, text)
+			assert(node)
+			assert(gui.get_position(node) == pos)
+			assert(gui.get_text(node) == text)
+		end)
+
+		it("should be able to clone nodes", function()
+			local box_node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
+			local text_node = gui.new_text_node(vmath.vector3(10, 10, 0), "Hello")
+			assert(box_node)
+			assert(text_node)
+			
+			local box_clone = gui.clone(box_node)
+			assert(box_clone)
+			assert(gui.get_position(box_clone) == gui.get_position(box_node) )
+			assert(gui.get_size(box_clone) == gui.get_size(box_node))
+
+			local text_clone = gui.clone(text_node)
+			assert(text_clone)
+			assert(gui.get_position(text_clone) == gui.get_position(text_node) )
+			assert(gui.get_text(text_clone) == gui.get_text(text_node))
+		end)
+
 		it("should be able to get and set node scale", function()
 			local node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
 			assert(node)
