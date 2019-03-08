@@ -287,7 +287,6 @@ local function load_contexts(target, contexts)
   end
 
   local function test_block(name, func)
-		print(name)
     local test_table = {name = name, parent = current_index, test = func or true}
     if current_index ~= 0 then
       test_table.context_name = context_table[current_index].name
@@ -431,7 +430,7 @@ local function run(contexts, callbacks, test_filter)
 
   for i, v in filter(contexts, function(i, v) return v.test and test_filter(v) end) do
     env = newEnv()    -- Setup a new environment for this test
-
+    print(("[TEST] %s: %s"):format(v.context_name, v.name))
     local ancestors = ancestors(i, contexts)
     local context_name = 'Top level'
     if contexts[i].parent ~= 0 then
