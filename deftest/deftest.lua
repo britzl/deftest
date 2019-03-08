@@ -63,10 +63,16 @@ function M.run(options)
 	if options.coverage.enabled then
 		luacov_runner.init(options.coverage.configuration)
 	end
+	local function filter(t)
+		if options.pattern then
+			return t.name:match(options.pattern)
+		else
+			return true
+		end
+	end
 	local co = coroutine.create(function()
 		local callbacks = {}
-		local test_pattern = nil
-		local results = telescope.run(contexts, callbacks, test_pattern)
+		local results = telescope.run(contexts, callbacks, filter)
 		local summary, data = telescope.summary_report(contexts, results)
 		local test_report = telescope.test_report(contexts, results)
 		local error_report = telescope.error_report(contexts, results)

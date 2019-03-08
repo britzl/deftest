@@ -429,8 +429,8 @@ local function run(contexts, callbacks, test_filter)
   end
 
   for i, v in filter(contexts, function(i, v) return v.test and test_filter(v) end) do
-    env = newEnv()    -- Setup a new environment for this test
     print(("[TEST] %s: %s"):format(v.context_name, v.name))
+    env = newEnv()    -- Setup a new environment for this test
     local ancestors = ancestors(i, contexts)
     local context_name = 'Top level'
     if contexts[i].parent ~= 0 then
