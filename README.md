@@ -57,7 +57,7 @@ The tests for this project can either be executed from within Defold or through 
 ### Using Travis-CI
 The tests in this project are run on [Travis-CI](https://travis-ci.org/britzl/deftest). The configuration can be seen in the [.travis.yml](https://github.com/britzl/deftest/blob/master/.travis.yml) file while the bulk of the work is done in the run.sh script.
 
-[![Travis-CI](https://travis-ci.org/britzl/deftest.svg?branch=master)]((https://travis-ci.org/britzl/deftest)
+[![Travis-CI](https://travis-ci.org/britzl/deftest.svg?branch=master)](https://travis-ci.org/britzl/deftest)
 
 For an up-to-date version of the script and steps needed to run on Travis-CI please refer to the [defold-travis-ci](https://github.com/britzl/defold-travis-ci) project.
 
