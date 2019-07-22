@@ -49,6 +49,42 @@ And a Lua file containing some tests:
 
 More examples of the Telescope test syntax can be seen in [telescope_syntax.lua](https://github.com/britzl/deftest/blob/master/test/telescope_syntax.lua) and a full example of how to setup and run tests can be seen [in the test folder](https://github.com/britzl/deftest/tree/master/test).
 
+### Custom asserts
+Telescope provides a system for custom asserts with the following asserts available by default:
+
+* assert_blank(a) - true if a is nil, or the empty string
+* assert_empty(a) - true if a is an empty table
+* assert_equal(a, b) - true if a == b
+* assert_error(f) - true if function f produces an error
+* assert_false(a) - true if a is false
+* assert_greater_than(a, b) - true if a > b
+* assert_gte(a, b) - true if a >= b
+* assert_less_than(a, b) - true if a < b
+* assert_lte(a, b) - true if a <= b
+* assert_match(a, b) - true if b is a string that matches pattern a
+* assert_nil(a) - true if a is nil
+* assert_true(a) - true if a is true
+* assert_type(a, b) - true if a is of type b
+* assert_not_blank(a)  - true if a is not nil and a is not the empty string
+* assert_not_empty(a) - true if a is a table, and a is not empty
+* assert_not_equal(a, b) - true if a ~= b
+* assert_not_error(f) - true if function f does not produce an error
+* assert_not_false(a) - true if a is not false
+* assert_not_greater_than(a, b) - true if not (a > b)
+* assert_not_gte(a, b) - true if not (a >= b)
+* assert_not_less_than(a, b) - true if not (a < b)
+* assert_not_lte(a, b) - true if not (a <= b)
+* assert_not_match(a, b) - true if the string b does not match the pattern a
+* assert_not_nil(a) - true if a is not nil
+* assert_not_true(a) - true if a is not true
+* assert_not_type(a, b) - true if a is not of type b
+
+DefTest adds these additional asserts:
+
+* assert_same(...) - true if all values are the same (using deep compare of values)
+* assert_unique(...) - true if all values are unique (using deep compare of values)
+* assert_equal(...) - true if all values are equal (using equality operator, ==)
+
 ## Running tests from a CI system
 The real power of unit tests is as we have learned when the tests can be automated and run for every change made to the code. There are many CI systems available and this project will also show how to integrate with some of the more popular CI systems out there. The main idea is to configure a physical or virtual machine so that tests can be run frequently and with predictable results every time. Once the configuration of the machine is complete a script of some kind executes the tests and depending on the outcome different actions are taken. Failed tests could perhaps trigger e-mail notifications to team members or a dashboard display to light up while successful tests could trigger a build of binaries based on the tested code.
 
