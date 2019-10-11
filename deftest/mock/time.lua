@@ -9,9 +9,9 @@ function M.mock()
 	mock.mock(socket)
 
 	mock_time = socket.gettime.original()
-	os.time.replace(function()
-		if not mock_time then
-			return os.time.original()
+	os.time.replace(function(time_table)
+		if not mock_time or time_table then
+			return os.time.original(time_table)
 		end
 		return math.floor(mock_time)
 	end)
