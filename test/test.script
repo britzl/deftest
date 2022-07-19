@@ -10,6 +10,7 @@ local test_mock_gui = require "test.test_mock_gui"
 local test_check = require "test.test_check"
 local telescope_spec = require "test.telescope_spec"
 
+local container = require "integration.integration_tests_container"
 
 function init(self)
 	deftest.add(test_http)
@@ -21,5 +22,6 @@ function init(self)
 	deftest.add(test_unload)
 	deftest.add(test_mock_gui)
 	deftest.add(test_check)
+	deftest.add(integration_test)
 	deftest.run({ coverage = { enabled = true }, pattern = nil })
 end
