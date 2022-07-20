@@ -12,21 +12,40 @@ function final(self)
 	-- Remove this function if not needed
 end
 
+function get_message(self, message)
+	container.add_processed_test(self.test_name, container.tests[self.test_name].test.after(message))
+	msg.post(self.integration_test_manager, "test_processed", {test_name = self.test_name})
+end
+
+function test_after_waiting(self)
+	self.running = false
+	container.add_processed_test(self.test_name, container.tests[self.test_name].test.after())
+	msg.post(self.integration_test_manager, "test_processed", {test_name = self.test_name})
+end
+
+function test_too_long(self)
+	container.add_processed_test(self.test_name,
+		function()
+			describe(self.test_name, function()
+				test("Test " .. self.test_name .. " has exceeded the time limit", function()
+					assert(false)
+				end)
+			end)
+		end
+	)
+	self.running = false
+	msg.post(self.integration_test_manager, "test_too_long", {test_name = self.test_name})
+end
+
 function update(self, dt)
 	if self.running then
 		self.time_since_test_start = self.time_since_test_start + dt
 		if self.time_since_test_start > self.max_time then
-			container.add_processed_test(self.test_name,
-				function()
-					describe(self.test_name, function()
-						test(self.test_name .. " has exceeded the time limit", function()
-							assert(false)
-						end)
-					end)
-				end
-			)
-			self.running = false
-			msg.post(self.integration_test_manager, "test_too_long", {test_name = self.test_name})
+			if self.type == "wait" then
+				test_after_waiting(self)
+			else
+				test_too_long(self)
+			end
 		end
 	end
 end
@@ -42,8 +61,7 @@ function on_message(self, message_id, message, sender)
 	elseif self.running then
 		if self.type == "message" and sender == container.tests[self.test_name].test.sender
 		and message_id == hash(container.tests[self.test_name].test.message_id) then
-			container.add_processed_test(self.test_name, container.tests[self.test_name].test.after(message))
-			msg.post(self.integration_test_manager, "test_processed", {test_name = self.test_name})
+			get_message(self, message)
 		end
 	end
 end
