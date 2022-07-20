@@ -1,11 +1,11 @@
 -- Script of the object that manages integration tests.
 
 local container = require "integration.integration_tests_container"
+local deftest = require "deftest.deftest"
 
 function init(self)
-	-- Add initialization code here
-	-- Learn more: https://defold.com/manuals/script/
-	-- Remove this function if not needed
+	self.tests_count = 0
+	self.tests_completed = 0
 end
 
 function final(self)
@@ -20,11 +20,23 @@ function update(self, dt)
 	-- Remove this function if not needed
 end
 
+function add_tests_to_deftest(self)
+	for test_name, test in pairs(container.processed_tests) do
+		deftest.add(test)
+	end
+end
+
 function on_message(self, message_id, message, sender)
 	if message_id == hash("start") then
 		for test_name, test in pairs(container.tests) do
+			self.tests_count = self.tests_count + 1
 			local testing_object_id = factory.create("#testing_objects_factory", vmath.vector3(0, 0, 0))
 			msg.post(testing_object_id, "execute", {test_name = test_name})
+		end
+	elseif message_id == hash("test_processed") or message_id == hash("test_too_long") then
+		self.tests_completed = self.tests_completed + 1
+		if self.tests_completed == self.tests_count then
+			add_tests_to_deftest(self)
 		end
 	end
 end
