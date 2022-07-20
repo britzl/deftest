@@ -55,7 +55,7 @@ function on_message(self, message_id, message, sender)
 		self.test_name = message.test_name
 		self.integration_test_manager = sender
 		self.type = container.tests[message.test_name].test.type
-		self.max_time = container.tests[message.test_name].test.time
+		self.max_time = container.tests[message.test_name].test.max_time
 		self.running = true
 		container.tests[message.test_name].test.before()
 	elseif self.running then

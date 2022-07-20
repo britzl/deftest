@@ -14,9 +14,7 @@ local container = require "integration.integration_tests_container"
 
 -- TODO - remove.
 function test_integration_tests(self)
-	local wait_test = {}
-	wait_test.before = function()  end
-	wait_test.after = function()
+	local wait_test = wait_test("Wait", function() end, function()
 		return function()
 			describe("Waiting tests", function()
 				test("Waiting test", function()
@@ -25,9 +23,7 @@ function test_integration_tests(self)
 				end)
 			end)
 		end 
-	end
-	wait_test.time = 1
-	wait_test.type = "wait"
+	end, 1)
 	container.add_test("Waiting test", wait_test)
 	msg.post("/integration_test_manager#integration_test_manager", "start")
 end
