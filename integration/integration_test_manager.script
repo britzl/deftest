@@ -1,5 +1,7 @@
 -- Script of the object that manages integration tests.
 
+local container = require "integration.integration_tests_container"
+
 function init(self)
 	-- Add initialization code here
 	-- Learn more: https://defold.com/manuals/script/
@@ -19,9 +21,12 @@ function update(self, dt)
 end
 
 function on_message(self, message_id, message, sender)
-	-- Add message-handling code here
-	-- Learn more: https://defold.com/manuals/message-passing/
-	-- Remove this function if not needed
+	if message_id == hash("start") then
+		for test_name, test in pairs(container.tests) do
+			local testing_object_id = factory.create("#testing_objects_factory", vmath.vector3(0, 0, 0))
+			msg.post(testing_object_id, "execute", {test_name = test_name})
+		end
+	end
 end
 
 function on_input(self, action_id, action)

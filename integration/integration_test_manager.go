@@ -14,7 +14,7 @@ components {
   }
 }
 embedded_components {
-  id: "factory"
+  id: "testing_objects_factory"
   type: "factory"
   data: "prototype: \"/integration/testing_object.go\"\n"
   "load_dynamically: false\n"

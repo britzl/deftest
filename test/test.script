@@ -13,6 +13,12 @@ local telescope_spec = require "test.telescope_spec"
 local container = require "integration.integration_tests_container"
 
 function init(self)
+	-- TODO - remove this code.
+	local test = {}
+	test.before = function() print("Hello world!") end
+	container.add_test("name", test)
+	msg.post("/integration_test_manager#integration_test_manager", "start")
+	
 	deftest.add(test_http)
 	deftest.add(test_vmath)
 	deftest.add(telescope_spec)
