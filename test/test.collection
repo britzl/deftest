@@ -1,23 +1,7 @@
 name: "test"
-scale_along_z: 0
-embedded_instances {
-  id: "go"
-  data: "components {\n"
-  "  id: \"script\"\n"
-  "  component: \"/test/test.script\"\n"
-  "  position {\n"
-  "    x: 0.0\n"
-  "    y: 0.0\n"
-  "    z: 0.0\n"
-  "  }\n"
-  "  rotation {\n"
-  "    x: 0.0\n"
-  "    y: 0.0\n"
-  "    z: 0.0\n"
-  "    w: 1.0\n"
-  "  }\n"
-  "}\n"
-  ""
+instances {
+  id: "integration_test_manager"
+  prototype: "/integration/integration_test_manager.go"
   position {
     x: 0.0
     y: 0.0
@@ -35,11 +19,12 @@ embedded_instances {
     z: 1.0
   }
 }
+scale_along_z: 0
 embedded_instances {
-  id: "testing_object"
+  id: "go"
   data: "components {\n"
-  "  id: \"testing_object\"\n"
-  "  component: \"/integration/testing_object.script\"\n"
+  "  id: \"script\"\n"
+  "  component: \"/test/test.script\"\n"
   "  position {\n"
   "    x: 0.0\n"
   "    y: 0.0\n"
