@@ -1,9 +1,9 @@
 local container = require "integration.integration_tests_container"
 
 function init(self)
-	-- Add initialization code here
-	-- Learn more: https://defold.com/manuals/script/
-	-- Remove this function if not needed
+	self.max_time = 1
+	self.time_since_test_start = 0
+	self.running = false
 end
 
 function final(self)
@@ -13,9 +13,22 @@ function final(self)
 end
 
 function update(self, dt)
-	-- Add update code here
-	-- Learn more: https://defold.com/manuals/script/
-	-- Remove this function if not needed
+	if self.running then
+		self.time_since_test_start = self.time_since_test_start + dt
+		if self.time_since_test_start > self.max_time then
+			container.add_processed_test(self.test_name,
+				function()
+					describe(self.test_name, function()
+						test(self.test_name .. " has exceeded the time limit", function()
+							assert(false)
+						end)
+					end)
+				end
+			)
+			self.running = false
+			msg.post(self.integration_test_manager, "test_too_long", {test_name = self.test_name})
+		end
+	end
 end
 
 function on_message(self, message_id, message, sender)
@@ -23,13 +36,15 @@ function on_message(self, message_id, message, sender)
 		self.test_name = message.test_name
 		self.integration_test_manager = sender
 		self.type = container.tests[message.test_name].test.type
-		
+		self.max_time = container.tests[message.test_name].test.time
+		self.running = true
 		container.tests[message.test_name].test.before()
-	elseif self.type == "message"
-	and sender == container.tests[self.test_name].test.sender
-	and message_id == hash(container.tests[self.test_name].test.message_id) then
-		container.add_processed_test(self.test_name, container.tests[self.test_name].test.after(message))
-		msg.post(self.integration_test_manager, "test_processed")
+	elseif self.running then
+		if self.type == "message" and sender == container.tests[self.test_name].test.sender
+		and message_id == hash(container.tests[self.test_name].test.message_id) then
+			container.add_processed_test(self.test_name, container.tests[self.test_name].test.after(message))
+			msg.post(self.integration_test_manager, "test_processed", {test_name = self.test_name})
+		end
 	end
 end
 
