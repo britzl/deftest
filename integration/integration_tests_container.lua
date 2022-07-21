@@ -5,10 +5,8 @@ local C = {}
 C.tests = {} -- Integration tests.
 C.processed_tests = {} -- Tests with data, which is gathered after simulation.
 
-function C.add_test(test_name, test)
-	test_struct = {}
-	test_struct.test = test
-	C.tests[test_name] = test_struct
+function C.add_test(test)
+	C.tests[test.name] = test
 end
 
 function C.add_processed_test(test_name, test)
@@ -29,12 +27,14 @@ end
 -- TODO - change for telescope-like syntax.
 function message_test(name, before, message_id, sender, after, max_time)
 	local test = {}
+	test.name = name
 	test.type = "message"
 	test.before = before
 	test.message_id = message_id
 	test.sender = sender
 	test.after = after
 	test.max_time = max_time
+	C.add_test(test)
 	return test
 end
 
@@ -42,10 +42,12 @@ end
 -- TODO - change for telescope-like syntax.
 function wait_test(name, before, after, max_time)
 	local test = {}
+	test.name = name
 	test.type = "wait"
 	test.before = before
 	test.after = after
 	test.max_time = max_time
+	C.add_test(test)
 	return test
 end
 
