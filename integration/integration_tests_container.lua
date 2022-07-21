@@ -15,6 +15,16 @@ function C.add_processed_test(test_name, test)
 	C.processed_tests[test_name] = test
 end
 
+function C.get_processed_tests_group()
+	return function()
+		context("Integration tests", function() 
+			for test_name, processed_test in pairs(C.processed_tests) do
+				test(test_name, processed_test)
+			end
+		end)
+	end
+end
+
 -- Function that creates integration test that triggers when messege is received.
 -- TODO - change for telescope-like syntax.
 function message_test(name, before, message_id, sender, after, max_time)

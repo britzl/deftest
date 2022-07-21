@@ -16,15 +16,11 @@ local container = require "integration.integration_tests_container"
 function test_integration_tests(self)
 	local wait_test = wait_test("Wait", function() end, function()
 		return function()
-			describe("Waiting tests", function()
-				test("Waiting test", function()
-					-- To check that .go is assessible from telescope.
-					assert(go.get_position(".") == vmath.vector3(0, 0, 0))
-				end)
-			end)
+			assert(go.get_position(".") == vmath.vector3(0, 0, 0))
 		end 
 	end, 1)
 	container.add_test("Waiting test", wait_test)
+	container.add_test("Waiting test 2", wait_test)
 	msg.post("/integration_test_manager#integration_test_manager", "start")
 end
 
@@ -42,5 +38,5 @@ function init(self)
 	deftest.add(test_mock_gui)
 	deftest.add(test_check)
 	deftest.add(integration_test)
-	deftest.run({ coverage = { enabled = true }, pattern = nil })
+	--deftest.run({ coverage = { enabled = true }, pattern = nil })
 end

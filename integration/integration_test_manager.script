@@ -21,9 +21,8 @@ function update(self, dt)
 end
 
 function add_tests_to_deftest(self)
-	for test_name, test in pairs(container.processed_tests) do
-		deftest.add(test)
-	end
+	deftest.add(container.get_processed_tests_group())
+	deftest.run({ coverage = { enabled = true }, pattern = nil })
 end
 
 function on_message(self, message_id, message, sender)
