@@ -13,6 +13,7 @@ function final(self)
 end
 
 function get_message(self, message)
+	self.running = false
 	container.add_processed_test(self.test_name, container.tests[self.test_name].after(message))
 	msg.post(self.integration_test_manager, "test_processed", {test_name = self.test_name})
 end
@@ -24,15 +25,9 @@ function test_after_waiting(self)
 end
 
 function test_too_long(self)
-	container.add_processed_test(self.test_name,
-		function()
-			describe(self.test_name, function()
-				test("Test " .. self.test_name .. " has exceeded the time limit", function()
-					assert(false)
-				end)
-			end)
-		end
-	)
+	container.add_processed_test(self.test_name, function()
+		assert(false)
+	end)
 	self.running = false
 	msg.post(self.integration_test_manager, "test_too_long", {test_name = self.test_name})
 end
@@ -59,7 +54,7 @@ function on_message(self, message_id, message, sender)
 		self.running = true
 		container.tests[message.test_name].before()
 	elseif self.running then
-		if self.type == "message" and sender == container.tests[self.test_name].sender
+		if self.type == "message" and sender == msg.url(container.tests[self.test_name].sender)
 		and message_id == hash(container.tests[self.test_name].message_id) then
 			get_message(self, message)
 		end
