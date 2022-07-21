@@ -9,26 +9,11 @@ local test_unload = require "test.test_unload"
 local test_mock_gui = require "test.test_mock_gui"
 local test_check = require "test.test_check"
 local telescope_spec = require "test.telescope_spec"
-
-local container = require "integration.integration_tests_container"
-
--- TODO - remove.
-function test_integration_tests(self)
-	wait_test("Waiting test", function() end, function()
-		return function()
-			assert(go.get_position(".") == vmath.vector3(0, 0, 0))
-		end 
-	end, 1)
-	wait_test("Waiting test 2", function() end, function()
-		return function()
-			assert(true)
-		end 
-	end, 1)
-	msg.post("/integration_test_manager#integration_test_manager", "start")
-end
+local integration_test = require "test.test_integration_tests"
 
 function init(self)
-	test_integration_tests(self)
+	integration_test()
+	msg.post("/integration_test_manager#integration_test_manager", "start")
 	-- TODO - call deftest.run only after all integration tests are complete.
 	
 	deftest.add(test_http)

@@ -15,7 +15,7 @@ end
 
 function C.get_processed_tests_group()
 	return function()
-		context("Integration tests", function() 
+		context("integration tests", function() 
 			for test_name, processed_test in pairs(C.processed_tests) do
 				test(test_name, processed_test)
 			end
