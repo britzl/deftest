@@ -24,7 +24,6 @@ function C.get_processed_tests_group()
 end
 
 -- Function that creates integration test that triggers when messege is received.
--- TODO - change for telescope-like syntax.
 function message_test(name, before, message_id, sender, after, max_time)
 	local test = {}
 	test.name = name
@@ -39,7 +38,6 @@ function message_test(name, before, message_id, sender, after, max_time)
 end
 
 -- Function that creates integration test that triggers after a given time.
--- TODO - change for telescope-like syntax.
 function wait_test(name, before, after, max_time)
 	local test = {}
 	test.name = name
