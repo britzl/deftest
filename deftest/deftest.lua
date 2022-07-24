@@ -53,62 +53,71 @@ function M.add(...)
 	end
 end
 
+local integration_test_manager = nil
+function M.set_integration_test_manager(manager_url)
+	integration_test_manager = manager_url
+end
+
 --- Run all tests added via @{add}
 -- The engine will shut down with an exit code indicating success or
 -- failure and the test reports will be written to console.
-function M.run(options)
-	options = options or {}
-	options.coverage = options.coverage or {}
-	print("Code coverage:", options.coverage and options.coverage.enabled and "enabled" or "disabled")
-	if options.coverage.enabled then
-		luacov_runner.init(options.coverage.configuration)
-	end
-	local function filter(t)
-		if options.pattern then
-			return t.name:match(options.pattern)
-		else
-			return true
+function M.run(options, skip_integration)
+	if integration_test_manager ~= nil and not skip_integration then
+		msg.post(integration_test_manager, "start", {options = options})
+	else
+		options = options or {}
+		options.coverage = options.coverage or {}
+		print("Code coverage:", options.coverage and options.coverage.enabled and "enabled" or "disabled")
+		if options.coverage.enabled then
+			luacov_runner.init(options.coverage.configuration)
 		end
-	end
-	local co = coroutine.create(function()
-		local callbacks = {}
-		local results = telescope.run(contexts, callbacks, filter)
-		local summary, data = telescope.summary_report(contexts, results)
-		local test_report = telescope.test_report(contexts, results)
-		local error_report = telescope.error_report(contexts, results)
-		print("")
-		print("--- SUMMARY -----------------------")
-		print(summary)
-
-		print("")
-		print("--- TEST REPORT -------------------")
-		for line in test_report:gmatch("[^\r\n]+") do
-			print(line)
+		local function filter(t)
+			if options.pattern then
+				return t.name:match(options.pattern)
+			else
+				return true
+			end
 		end
+		local co = coroutine.create(function()
+			local callbacks = {}
+			local results = telescope.run(contexts, callbacks, filter)
+			local summary, data = telescope.summary_report(contexts, results)
+			local test_report = telescope.test_report(contexts, results)
+			local error_report = telescope.error_report(contexts, results)
+			print("")
+			print("--- SUMMARY -----------------------")
+			print(summary)
 
-		print("")
-		print("--- ERROR REPORT ------------------")
-		if not error_report then
-			print("0 errors")
-		else
-			for line in error_report:gmatch("[^\r\n]+") do
+			print("")
+			print("--- TEST REPORT -------------------")
+			for line in test_report:gmatch("[^\r\n]+") do
 				print(line)
 			end
-		end
 
-		for _, v in pairs(results) do
-			if v.status_code == telescope.status_codes.err or
-				v.status_code == telescope.status_codes.fail then
-				os.exit(1)
+			print("")
+			print("--- ERROR REPORT ------------------")
+			if not error_report then
+				print("0 errors")
+			else
+				for line in error_report:gmatch("[^\r\n]+") do
+					print(line)
+				end
 			end
-		end
-		os.exit(0)
-	end)
 
-	local ok, message = coroutine.resume(co)
-	if not ok then
-		print("Something went wrong while running tests", message)
-		os.exit(1)
+			for _, v in pairs(results) do
+				if v.status_code == telescope.status_codes.err or
+					v.status_code == telescope.status_codes.fail then
+					os.exit(1)
+				end
+			end
+			os.exit(0)
+		end)
+
+		local ok, message = coroutine.resume(co)
+		if not ok then
+			print("Something went wrong while running tests", message)
+			os.exit(1)
+		end
 	end
 end
 

@@ -13,9 +13,7 @@ local integration_test = require "test.test_integration_tests"
 
 function init(self)
 	integration_test()
-	msg.post("/integration_test_manager#integration_test_manager", "start")
-	-- TODO - call deftest.run only after all integration tests are complete.
-	
+	deftest.set_integration_test_manager("/integration_test_manager#integration_test_manager")
 	deftest.add(test_http)
 	deftest.add(test_vmath)
 	deftest.add(telescope_spec)
@@ -26,5 +24,5 @@ function init(self)
 	deftest.add(test_mock_gui)
 	deftest.add(test_check)
 	deftest.add(integration_test)
-	--deftest.run({ coverage = { enabled = true }, pattern = nil })
+	deftest.run({ coverage = { enabled = true }, pattern = nil })
 end
