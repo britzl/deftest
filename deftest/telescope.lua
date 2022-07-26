@@ -282,9 +282,7 @@ local function load_contexts(target, contexts)
     table.insert(context_table, {parent = current_index, name = name, context = true})
     local previous_index = current_index
     current_index = #context_table
-    -- setfenv is needed for loading code-generated tests with inner tests or
-    -- contexts created as separate ananymous functions.
-    setfenv(func, env)()
+    func()
     current_index = previous_index
   end
 

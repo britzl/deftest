@@ -12,7 +12,6 @@ local telescope_spec = require "test.telescope_spec"
 local integration_test = require "test.test_integration_tests"
 
 function init(self)
-	integration_test()
 	deftest.set_integration_test_manager("/integration_test_manager#integration_test_manager")
 	deftest.add(test_http)
 	deftest.add(test_vmath)
