@@ -52,7 +52,7 @@ function C.get_processed_tests_group()
 end
 
 -- Function that creates a group of integration tests.
-function integration_context(name, func)
+function C.integration_context(name, func)
 	table.insert(C.context_table, {parent = current_index, name = name, context = true})
 	local previous_index = current_index
 	current_index = #(C.context_table)
@@ -61,7 +61,7 @@ function integration_context(name, func)
 end
 
 -- Function that creates integration test that triggers when messege is received.
-function message_test(name, before, message_id, sender, after, max_time)
+function C.message_test(name, before, message_id, sender, after, max_time)
 	local test = {}
 	test.name = name
 	test.type = "message"
@@ -75,7 +75,7 @@ function message_test(name, before, message_id, sender, after, max_time)
 end
 
 -- Function that creates integration test that triggers after a given time.
-function wait_test(name, before, after, max_time)
+function C.wait_test(name, before, after, max_time)
 	local test = {}
 	test.name = name
 	test.type = "wait"

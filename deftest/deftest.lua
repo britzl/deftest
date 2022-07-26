@@ -44,6 +44,20 @@ local M = {}
 
 local contexts = {}
 
+local container = require "integration.integration_tests_container"
+
+function M.add_integration(...)
+	local args = {...}
+	local env = {}
+	setmetatable(env, {__index = _G})
+	env["integration_context"] = container.integration_context
+	env["message_test"] = container.message_test
+	env["wait_test"] = container.wait_test
+	for _,test in ipairs(args) do
+		setfenv(test, env)()
+	end
+end
+
 --- Add one or more sets of tests
 -- Each set of tests must be wrapped in a function
 function M.add(...)

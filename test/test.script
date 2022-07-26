@@ -22,6 +22,6 @@ function init(self)
 	deftest.add(test_unload)
 	deftest.add(test_mock_gui)
 	deftest.add(test_check)
-	deftest.add(integration_test)
+	deftest.add_integration(integration_test)
 	deftest.run({ coverage = { enabled = true }, pattern = nil })
 end
