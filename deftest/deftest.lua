@@ -52,9 +52,11 @@ function M.add_integration(...)
 	local args = {...}
 	local env = {}
 	setmetatable(env, {__index = _G})
-	env["integration_context"] = container.integration_context
-	env["message_test"] = container.message_test
-	env["wait_test"] = container.wait_test
+	env["context"] = container.integration_context
+	env["test"] = container.integration_test
+	env["on_message"] = container.on_message
+	env["on_wait"] = container.on_wait
+	env["before"] = container.before
 	for _,test in ipairs(args) do
 		setfenv(test, env)()
 	end

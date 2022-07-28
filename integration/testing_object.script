@@ -8,14 +8,22 @@ end
 
 function get_message(self, message)
 	self.running = false
-	container.add_processed_test(self.index, container.context_table[self.index].after(message))
+	local after_without_message = container.context_table[self.index].after
+	local after_with_message = function()
+		-- Insert message inside the test's environment.
+		local env = {}
+		setmetatable(env, {__index = getfenv(1)})
+		env["message"] = message
+		setfenv(after_without_message, env)()
+	end
+	container.add_processed_test(self.index, after_with_message)
 	msg.post(self.integration_test_manager, "test_processed", {index = self.index})
 	go.delete(".")
 end
 
 function test_after_waiting(self)
 	self.running = false
-	container.add_processed_test(self.index, container.context_table[self.index].after())
+	container.add_processed_test(self.index, container.context_table[self.index].after)
 	msg.post(self.integration_test_manager, "test_processed", {index = self.index})
 	go.delete(".")
 end

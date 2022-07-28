@@ -3,13 +3,8 @@
 local C = {}
 
 local current_index = 0
+local current_test = {}
 C.context_table = {}
-
-function C.add_test(test)
-	test.parent = current_index
-	table.insert(C.context_table, test)
-	test.index = #(C.context_table)
-end
 
 function C.add_processed_test(test_index, test)
 	C.context_table[test_index].processed_test = test
@@ -21,7 +16,7 @@ function C.get_processed_tests_group()
 			context.children = {}
 		end
 	end
-	local root = {name = "integration_tests", children = {}, context = true}
+	local root = {name = "integration_tests", children = {}, context = true, parent = -1}
 	for index, context in pairs(C.context_table) do
 		if context.parent == 0 then
 			table.insert(root.children, context)
@@ -30,9 +25,11 @@ function C.get_processed_tests_group()
 		end
 	end
 	local function get_unit_test(current_context)
-		print(current_context)
-		if current_context.context then
-			print(current_context.name)
+		if current_context.parent == -1 then
+			for index, next_context in pairs(current_context.children) do
+				get_unit_test(next_context)
+			end			
+		elseif current_context.context then
 			context(current_context.name, function()
 				for index, next_context in pairs(current_context.children) do
 					get_unit_test(next_context)
@@ -60,30 +57,33 @@ function C.integration_context(name, func)
 	current_index = previous_index
 end
 
--- Function that creates integration test that triggers when messege is received.
-function C.message_test(name, before, message_id, sender, after, max_time)
+-- Function that create integration test.
+function C.integration_test(name, max_time, func)
 	local test = {}
 	test.name = name
-	test.type = "message"
-	test.before = before
-	test.message_id = message_id
-	test.sender = sender
-	test.after = after
 	test.max_time = max_time
-	C.add_test(test)
-	return test
+	test.parent = current_index
+	
+	table.insert(C.context_table, test)
+	test.index = #(C.context_table)
+	current_test = test
+	func()
 end
 
--- Function that creates integration test that triggers after a given time.
-function C.wait_test(name, before, after, max_time)
-	local test = {}
-	test.name = name
-	test.type = "wait"
-	test.before = before
-	test.after = after
-	test.max_time = max_time
-	C.add_test(test)
-	return test
+function C.before(func)
+	current_test.before = func
+end
+
+function C.on_wait(func)
+	current_test.type = "wait"
+	current_test.after = func
+end
+
+function C.on_message(message_id, sender, func)
+	current_test.type = "message"
+	current_test.message_id = message_id
+	current_test.sender = sender
+	current_test.after = func
 end
 
 return C
