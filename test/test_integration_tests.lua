@@ -1,11 +1,7 @@
 return function()
 	context("integration context", function()
 		context("nested integration context", function()
-			test("should execute wait_tests after a time period", 0.1, function()
-				before(function()
-					
-				end)
-				
+			test("should execute wait_tests after a time period", 0.1, function()	
 				on_wait(function()
 					assert(go.get_position(".") == vmath.vector3(0, 0, 0))
 				end)
