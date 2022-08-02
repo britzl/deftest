@@ -1,6 +1,6 @@
 -- Script of the object that manages integration tests.
 
-local container = require "integration.integration_tests_container"
+local container = require "deftest.integration.integration_tests_container"
 local deftest = require "deftest.deftest"
 
 function init(self)

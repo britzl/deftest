@@ -44,7 +44,7 @@ local M = {}
 
 local contexts = {}
 
-local container = require "integration.integration_tests_container"
+local container = require "deftest.integration.integration_tests_container"
 
 --- Add one or more sets of integration tests
 -- Each set of tests must be wrapped in a function

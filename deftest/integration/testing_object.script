@@ -1,4 +1,4 @@
-local container = require "integration.integration_tests_container"
+local container = require "deftest.integration.integration_tests_container"
 
 function init(self)
 	self.max_time = 1

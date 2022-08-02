@@ -1,6 +1,6 @@
 components {
   id: "integration_test_manager"
-  component: "/integration/integration_test_manager.script"
+  component: "/deftest/integration/integration_test_manager.script"
   position {
     x: 0.0
     y: 0.0
@@ -16,7 +16,7 @@ components {
 embedded_components {
   id: "testing_objects_factory"
   type: "factory"
-  data: "prototype: \"/integration/testing_object.go\"\n"
+  data: "prototype: \"/deftest/integration/testing_object.go\"\n"
   "load_dynamically: false\n"
   ""
   position {
