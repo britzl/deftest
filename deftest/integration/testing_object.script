@@ -1,4 +1,5 @@
 local container = require "deftest.integration.integration_tests_container"
+local telescope = require "deftest.telescope"
 
 function init(self)
 	self.max_time = 1
@@ -16,16 +17,30 @@ function get_message(self, message)
 		env["message"] = message
 		setfenv(after_without_message, env)()
 	end
-	container.add_processed_test(self.index, after_with_message)
+	invoke_test(self, after_with_message)
 	msg.post(self.integration_test_manager, "test_processed", {index = self.index})
 	go.delete(".")
 end
 
 function test_after_waiting(self)
 	self.running = false
-	container.add_processed_test(self.index, container.context_table[self.index].after)
+		invoke_test(self, container.context_table[self.index].after)
 	msg.post(self.integration_test_manager, "test_processed", {index = self.index})
 	go.delete(".")
+end
+
+function invoke_test(self, func)
+	local result = {}
+	result.status_code, result.assertions_invoked, result.message = telescope.invoke_test_separately(func)
+	local result_func = function() end
+	if result.status_code == telescope.status_codes.pass then
+		result_func = function() assert(true, result.message) end
+	elseif result.status_code == telescope.status_codes.fail or result.status_code == telescope.status_codes.err then
+		result_func = function() assert(false, result.message) end
+	elseif result.status_code == telescope.status_codes.pending then
+		result_func = {}
+	end
+	container.add_processed_test(self.index, result_func)
 end
 
 function test_too_long(self)
