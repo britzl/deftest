@@ -24,6 +24,9 @@ function on_message(self, message_id, message, sender)
 				msg.post(testing_object_id, "execute", {index = index})
 			end
 		end
+		if self.tests_count == 0 then
+			run_tests_in_deftest(self)
+		end
 	elseif message_id == hash("test_processed") or message_id == hash("test_too_long") then
 		self.tests_completed = self.tests_completed + 1
 		if self.tests_completed == self.tests_count then
