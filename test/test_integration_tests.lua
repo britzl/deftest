@@ -1,6 +1,6 @@
 return function()
 	
-	context("integration context", function()
+	describe("integration context", function()
 		context("nested integration context", function()
 			test("should execute wait_tests after a time period", 0.1, function()
 				
@@ -9,7 +9,7 @@ return function()
 				end)
 			end)
 
-			test("should execute message_tests when a message is received", 10, function()
+			it("should execute message_tests when a message is received", 10, function()
 				before(function()
 					msg.post("/echo_mock#echo_mock", "echo test", {text = "test"})
 				end)

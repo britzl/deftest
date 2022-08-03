@@ -1,5 +1,7 @@
 -- Module that stores integration tests.
 
+local telescope = require "deftest.telescope"
+
 local C = {}
 
 C.context_table = {}
@@ -95,11 +97,17 @@ function C.add_integration(args)
 	
 	local env = {}
 	setmetatable(env, {__index = _G})
-	env["context"] = integration_context
-	env["test"] = integration_test
+	for _, alias in pairs(telescope.context_aliases) do
+		env[alias] = integration_context
+	end
+	for _, alias in pairs(telescope.test_aliases) do
+		env[alias] = integration_test
+	end
+	for _, alias in pairs(telescope.before_aliases) do
+		env[alias] = integration_before
+	end
 	env["on_message"] = on_message
 	env["on_wait"] = on_wait
-	env["before"] = integration_before
 	for _,test in ipairs(args) do
 		setfenv(test, env)()
 	end
