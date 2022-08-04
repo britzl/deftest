@@ -43,9 +43,20 @@ function invoke_test(self, func)
 	container.add_processed_test(self.index, result_func)
 end
 
+function invoke_before(self, func)
+	local result, message = xpcall(func, debug.traceback)
+	if not result then
+		container.add_processed_test(self.index, function()
+			assert(false, message)
+		end)
+		msg.post(self.integration_test_manager, "error", {index = self.index})
+		go.delete(".")
+	end
+end
+
 function test_too_long(self)
 	container.add_processed_test(self.index, function()
-		assert(false)
+		assert(false, "test took too long")
 	end)
 	self.running = false
 	msg.post(self.integration_test_manager, "test_too_long", {index = self.index})
@@ -72,7 +83,7 @@ function on_message(self, message_id, message, sender)
 		self.type = container.context_table[message.index].type
 		self.max_time = container.context_table[message.index].max_time
 		self.running = true
-		container.context_table[message.index].before()
+		invoke_before(self, container.context_table[message.index].before)
 	elseif self.running then
 		if self.type == "message" and sender == msg.url(container.context_table[self.index].sender)
 		and message_id == hash(container.context_table[self.index].message_id) then
