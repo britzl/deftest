@@ -54,6 +54,14 @@ function invoke_before(self, func)
 	end
 end
 
+function check_after(self)
+	if container.context_table[self.index].after == nil then
+		container.add_processed_test(self.index, function() end)
+		msg.post(self.integration_test_manager, "test_processed", {index = self.index})
+		go.delete(".")
+	end
+end
+
 function test_too_long(self)
 	container.add_processed_test(self.index, function()
 		assert(false, "test took too long")
@@ -83,6 +91,7 @@ function on_message(self, message_id, message, sender)
 		self.type = container.context_table[message.index].type
 		self.max_time = container.context_table[message.index].max_time
 		self.running = true
+		check_after(self)
 		invoke_before(self, container.context_table[message.index].before)
 	elseif self.running then
 		if self.type == "message" and sender == msg.url(container.context_table[self.index].sender)

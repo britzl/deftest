@@ -68,7 +68,7 @@ function C.add_integration(args)
 		test.max_time = max_time
 		test.parent = current_index
 		test.before = function() end
-		test.after = function() end
+		test.after = nil
 
 		table.insert(C.context_table, test)
 		test.index = #(C.context_table)
