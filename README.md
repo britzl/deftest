@@ -77,6 +77,8 @@ Another Lua file containing integration tests, which are used to test game objec
 			test("should send 'game_over' message when colliding with obstacles", 5, function()
 				-- 5 seconds is the time limit for this test.
 				before(function()
+					-- There you can make game objects send messages to the object, which executes this test.
+					-- To get url of this object you can use msg.url().
 					msg.post("/car2", "set_game_url", {game_url = msg.url()})
 					factory.create("/obstacle_factory#obstacle_factory", vmath.vector3(400, 200, 0))
 				end)
