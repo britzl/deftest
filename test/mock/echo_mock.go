@@ -1,6 +1,6 @@
 components {
   id: "echo_mock"
-  component: "/deftest/integration/mock/echo_mock.script"
+  component: "/test/mock/echo_mock.script"
   position {
     x: 0.0
     y: 0.0

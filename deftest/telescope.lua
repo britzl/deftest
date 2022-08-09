@@ -348,6 +348,7 @@ local function newEnv()
   return env
 end
 
+-- Invoke test inside the environment.
 local function invoke_test(func, env)
   local assertions_invoked = 0
   env.assertion_callback = function()
@@ -367,6 +368,8 @@ local function invoke_test(func, env)
 end
 
 -- Invoke test without adding it to the report.
+-- This function is used for invoking integration tests
+-- to get predictable results.
 local function invoke_test_separately(func)
   return invoke_test(func, newEnv())
 end

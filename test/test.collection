@@ -21,7 +21,7 @@ instances {
 }
 instances {
   id: "echo_mock"
-  prototype: "/deftest/integration/mock/echo_mock.go"
+  prototype: "/test/mock/echo_mock.go"
   position {
     x: 0.0
     y: 0.0

@@ -1,3 +1,6 @@
+-- Script of the testing object.
+-- Each testing object executes one tests and can receive messages.
+
 local container = require "deftest.integration.integration_tests_container"
 local telescope = require "deftest.telescope"
 

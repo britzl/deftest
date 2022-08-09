@@ -8,8 +8,11 @@
 --	local deftest = require "deftest.deftest"
 --	local some_tests = require "test.some_tests"
 --	local other_tests = require "test.other_tests"
+--	local integration_tests = require "test.some_integration_tests"
 --
 --	function init(self)
+--		deftest.set_integration_test_manager(url_to_integration_manager)
+--		deftest.add_integration(some_integration_tests)
 --		deftest.add(some_tests, other_tests)
 --		deftest.run()
 --	end
