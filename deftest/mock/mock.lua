@@ -123,6 +123,7 @@ function mock.unmock(module)
 		if type(v) == "table" then
 			if v.orig_fn then
 				module[k] = v.orig_fn
+				v.calls = 0
 			end
 		end
 	end
