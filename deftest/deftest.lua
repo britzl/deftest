@@ -21,21 +21,44 @@ local luacov_runner = require "luacov.runner"
 
 local check = require "deftest.util.check"
 
+local function argstostring(...)
+	local args = { ... }
+	local length = select("#", ...)
+	for i = 1, length do
+		args[i] = tostring(args[i])
+	end
+	return table.concat(args, ",")
+end
+
 telescope.make_assertion(
 	"same",
-	function(_, ...) return telescope.assertion_message_prefix .. "all values to be the same" end,
+	function(_, ...)
+		local message =  telescope.assertion_message_prefix .. "all values to be the same. Actual: "
+		message = message .. argstostring(...)
+		return message
+	end,
 	function(...) return check.same(...) end
 )
 
 telescope.make_assertion(
 	"unique",
-	function(_, ...) return telescope.assertion_message_prefix .. "all values to be unique" end,
-	function(...) return check.unique(...) end
+	function(_, ...)
+		local message = telescope.assertion_message_prefix .. "all values to be unique. Actual: "
+		message = message .. argstostring(...)
+		return message
+	end,
+	function(...)
+		return check.unique(...)
+	end
 )
 
 telescope.make_assertion(
 	"equal",
-	function(_, ...) return telescope.assertion_message_prefix .. "all values to be equal (using the equality operator)" end,
+	function(_, ...)
+		local message = telescope.assertion_message_prefix .. "all values to be equal (using the equality operator). Actual: "
+		message = message .. argstostring(...)
+		return message
+	end,
 	function(...) return check.equal(...) end
 )
 
