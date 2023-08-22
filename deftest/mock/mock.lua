@@ -92,6 +92,7 @@ function mock.mock(module)
 					mock_fn.calls = mock_fn.calls + 1
 					local arg = {...}
 
+					mock_fn.params = {}
 					for index, value in pairs(arg) do
 						mock_fn.params[index] = value
 					end
