@@ -121,6 +121,14 @@ local function get_text(node)
 	return node.text
 end
 
+local function set_color(node, color)
+	node.color = color
+end
+
+local function get_color(node)
+	return node.color
+end
+
 local function get_position(node)
 	return vmath.vector3(node.position)
 end
@@ -231,6 +239,9 @@ function M.mock()
 	gui.set_text.replace(set_text)
 	gui.get_text.replace(get_text)
 
+	gui.set_color.replace(set_color)
+	gui.get_color.replace(get_color)
+
 	gui.get_position.replace(get_position)
 	gui.set_position.replace(set_position)
 
@@ -239,7 +250,7 @@ function M.mock()
 
 	gui.set_scale.replace(set_scale)
 	gui.get_scale.replace(get_scale)
-	
+
 	gui.new_box_node.replace(new_box_node)
 	gui.new_text_node.replace(new_text_node)
 
