@@ -332,6 +332,48 @@ function table.reverse(t)
      end
 end
 
+-- Setup a new environment suitable for running a new test
+local function newEnv()
+  local env = {}
+  
+  -- Make sure globals are accessible in the new environment
+  setmetatable(env, {__index = _G})
+
+  -- Setup all the assert functions in the new environment
+  for k, v in pairs(assertions) do
+    setfenv(v, env)
+    env[k] = v
+  end
+
+  return env
+end
+
+-- Invoke test inside the environment.
+local function invoke_test(func, env)
+  local assertions_invoked = 0
+  env.assertion_callback = function()
+    assertions_invoked = assertions_invoked + 1
+  end
+  setfenv(func, env)
+  local result, message = xpcall(func, debug.traceback)
+  if result and assertions_invoked > 0 then
+    return status_codes.pass, assertions_invoked, nil
+  elseif result then
+    return status_codes.unassertive, 0, nil
+  elseif type(message) == "table" then
+    return status_codes.fail, assertions_invoked, message
+  else
+    return status_codes.err, assertions_invoked, {message, debug.traceback()}
+  end
+end
+
+-- Invoke test without adding it to the report.
+-- This function is used for invoking integration tests
+-- to get predictable results.
+local function invoke_test_separately(func)
+  return invoke_test(func, newEnv())
+end
+
 --- Run all tests.
 -- This function will exectute each function in the contexts table.
 -- @param contexts The contexts created by <tt>load_contexts</tt>.
@@ -383,22 +425,6 @@ local function run(contexts, callbacks, test_filter)
   local status_names = invert_table(status_codes)
   local test_filter = test_filter or function(a) return a end
 
-  -- Setup a new environment suitable for running a new test
-  local function newEnv()
-    local env = {}
-
-    -- Make sure globals are accessible in the new environment
-    setmetatable(env, {__index = _G})
-
-    -- Setup all the assert functions in the new environment
-    for k, v in pairs(assertions) do
-      setfenv(v, env)
-      env[k] = v
-    end
-
-    return env
-  end
-
   local env = newEnv()
 
   local function invoke_callback(name, test)
@@ -407,24 +433,6 @@ local function run(contexts, callbacks, test_filter)
       for _, c in ipairs(callbacks[name]) do c(test) end
     elseif callbacks[name] then
       callbacks[name](test)
-    end
-  end
-
-  local function invoke_test(func)
-    local assertions_invoked = 0
-    env.assertion_callback = function()
-      assertions_invoked = assertions_invoked + 1
-    end
-    setfenv(func, env)
-    local result, message = xpcall(func, debug.traceback)
-    if result and assertions_invoked > 0 then
-      return status_codes.pass, assertions_invoked, nil
-    elseif result then
-      return status_codes.unassertive, 0, nil
-    elseif type(message) == "table" then
-      return status_codes.fail, assertions_invoked, message
-    else
-      return status_codes.err, assertions_invoked, {message, debug.traceback()}
     end
   end
 
@@ -456,7 +464,7 @@ local function run(contexts, callbacks, test_filter)
 
     -- check if it's a function because pending tests will just have "true"
     if type(v.test) == "function" then
-      result.status_code, result.assertions_invoked, result.message = invoke_test(v.test)
+      result.status_code, result.assertions_invoked, result.message = invoke_test(v.test, env)
       invoke_callback(status_names[result.status_code], result)
     else
       result.status_code = status_codes.pending
@@ -587,6 +595,7 @@ _M.before_aliases           = before_aliases
 _M.context_aliases          = context_aliases
 _M.error_report             = error_report
 _M.load_contexts            = load_contexts
+_M.invoke_test_separately   = invoke_test_separately
 _M.run                      = run
 _M.test_report              = test_report
 _M.status_codes             = status_codes

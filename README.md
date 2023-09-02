@@ -16,13 +16,23 @@ DefTest is provided as a Defold library project for easy integration in your own
 	https://github.com/britzl/deftest/archive/master.zip
 
 ```Lua
-It is recommended to run your unit tests from its own collection, set as the bootstrap collection in game.project. Add a game object and a script to the collection and use the script to set up your tests. An example:
+It is recommended to run your unit tests from its own collection, set as the bootstrap collection in game.project. Add a game object and a script to the collection and use the script to set up your tests. Add objects, which scripts you want to test.
+
+For running integration tests, it is important to add integration_test_manager.go located in the /deftest/integration/ folder to the collection and link it to deftest with deftest.set_integration_test_manager(path_to_integration_manager_object).
+
+deftest.add() adds unit tests, which test pure logic.
+deftest.add_integration() adds tests, which can be used to test scripts.
+
+An example:
 
 	local deftest = require "deftest.deftest"
 	local some_tests = require "test.some_tests"
 	local other_tests = require "test.other_tests"
+	local integration_tests = require "test.some_integration_tests"
 
 	function init(self)
+		deftest.set_integration_test_manager("/integration_test_manager#integration_test_manager")
+		deftest.add_integration(some_integration_tests)
 		deftest.add(some_tests)
 		deftest.add(other_tests)
 		deftest.run()
@@ -45,9 +55,49 @@ And a Lua file containing some tests:
 			end)
 		end)
 	end
+	
+Another Lua file containing integration tests, which are used to test game objects:
+
+	return function()
+		describe("car", function()
+			test("should move on input", 0.2, function()
+				-- 0.2 seconds is the time limit for this test.
+				before(function()
+					msg.post("/car1", "right")
+				end)
+
+				on_wait(function() -- This function will be executed after 0.2 seconds after "before".
+					msg.post("/car1", "stop")
+					local pos = go.get_position("/car1")
+					assert_less_than(pos.x, 142)
+					assert_greater_than(pos.x, 138)
+				end)
+			end)
+
+			test("should send 'game_over' message when colliding with obstacles", 5, function()
+				-- 5 seconds is the time limit for this test.
+				before(function()
+					-- There you can make game objects send messages to the object, which executes this test.
+					-- To get url of this object you can use msg.url().
+					msg.post("/car2", "set_game_url", {game_url = msg.url()})
+					factory.create("/obstacle_factory#obstacle_factory", vmath.vector3(400, 200, 0))
+				end)
+
+				on_message("game_over", "/car2#car", function()
+					-- This function will be executed on receiving message with message_id "game_over"
+					-- from script "/car2#car".
+					-- If the message is not received after 5 seconds after "before", test fails.
+					assert(true)
+				end)
+			end)
+		end)
+	end
+
 ```
 
-More examples of the Telescope test syntax can be seen in [telescope_syntax.lua](https://github.com/britzl/deftest/blob/master/test/telescope_syntax.lua) and a full example of how to setup and run tests can be seen [in the test folder](https://github.com/britzl/deftest/tree/master/test).
+Unit tests for pure logic and integration tests for scripts use different syntax.
+More examples of the Telescope unit test syntax can be seen in [telescope_syntax.lua](https://github.com/britzl/deftest/blob/master/test/telescope_syntax.lua) and a full example of how to setup and run tests can be seen [in the test folder](https://github.com/britzl/deftest/tree/master/test).
+Integration tests use different syntax, example of which can be seen in [test_integration_tests.lua](https://github.com/britzl/deftest/blob/master/test/test_integration_tests.lua).
 
 ### Custom asserts
 Telescope provides a system for custom asserts with the following asserts available by default:
@@ -116,3 +166,5 @@ When the tests have completed a code coverage report will be generated to `luaco
 
 ## Limitations
 Unit testing in Defold works best when testing Lua modules containing pure logic. Testing script and gui_script files is more related to integration tests as it not only involves your code, but also visual components and interaction between the different game objects and the systems provided by the engine. If your scripts contains complex code that you wish to test it is recommended to move the code to a Lua module and test just that module.
+
+Integration tests are run simultaneously, so it is recommended to make copies of objects for different tests, so they do not conflict with each other.

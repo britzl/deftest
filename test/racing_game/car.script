@@ -1,0 +1,57 @@
+function init(self)
+	msg.post(".", "acquire_input_focus")
+	self.vel = vmath.vector3()
+	self.game_url = ""
+end
+
+function update(self, dt)
+	local pos = go.get_position() + self.vel * dt
+	go.set_position(pos)
+end
+
+local function go_left(self)
+	self.vel.x = -200
+end
+
+local function go_right(self)
+	self.vel.x = 200
+end
+
+local function stop(self)
+	self.vel.x = 0
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("trigger_response") then
+		if message.enter then
+			msg.post(self.game_url, "game_over")
+			msg.post(".", "release_input_focus")
+		end
+	elseif message_id == hash("set_game_url") then
+		self.game_url = message.game_url
+	end
+	-- Handling messages for testing input.
+	if message_id == hash("left") then
+		go_left(self)
+	elseif message_id == hash("right") then
+		go_right(self)
+	elseif message_id == hash("stop") then
+		stop(self)
+	end
+end
+
+function on_input(self, action_id, action)
+	if action_id == hash("left") then
+		if action.pressed then
+			go_left(self)
+		elseif action.released then
+			stop(self)
+		end
+	elseif action_id == hash("right") then
+		if action.pressed then
+			go_right(self)
+		elseif action.released then
+			stop(self)
+		end
+	end
+end

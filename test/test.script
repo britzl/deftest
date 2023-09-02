@@ -9,9 +9,10 @@ local test_unload = require "test.test_unload"
 local test_mock_gui = require "test.test_mock_gui"
 local test_check = require "test.test_check"
 local telescope_spec = require "test.telescope_spec"
-
+local integration_test = require "test.test_integration_tests"
 
 function init(self)
+	deftest.set_integration_test_manager("/integration_test_manager#integration_test_manager")
 	deftest.add(test_http)
 	deftest.add(test_vmath)
 	deftest.add(telescope_spec)
@@ -21,5 +22,6 @@ function init(self)
 	deftest.add(test_unload)
 	deftest.add(test_mock_gui)
 	deftest.add(test_check)
+	deftest.add_integration(integration_test)
 	deftest.run({ coverage = { enabled = true }, pattern = nil })
 end

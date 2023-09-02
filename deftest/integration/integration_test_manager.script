@@ -1,0 +1,37 @@
+-- Script of the object that manages integration tests.
+-- Integration manager creates objects that execute tests and gathers results from them.
+
+local container = require "deftest.integration.integration_tests_container"
+local deftest = require "deftest.deftest"
+
+function init(self)
+	self.options = { coverage = { enabled = true }, pattern = nil }
+	self.tests_count = 0
+	self.tests_completed = 0
+end
+
+function run_tests_in_deftest(self)
+	deftest.add(container.get_processed_tests_group())
+	deftest.run(self.options, true)
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("start") then
+		self.options = message.options
+		for index, test in pairs(container.context_table) do
+			if test.context == nil or test.context == false then
+				self.tests_count = self.tests_count + 1
+				local testing_object_id = factory.create("#testing_objects_factory", vmath.vector3(0, 0, 0))
+				msg.post(testing_object_id, "execute", {index = index})
+			end
+		end
+		if self.tests_count == 0 then
+			run_tests_in_deftest(self)
+		end
+	elseif message_id == hash("test_processed") or message_id == hash("test_too_long") or message_id == hash("error") then
+		self.tests_completed = self.tests_completed + 1
+		if self.tests_completed == self.tests_count then
+			run_tests_in_deftest(self)
+		end
+	end
+end

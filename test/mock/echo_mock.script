@@ -1,0 +1,5 @@
+-- Object that sends all received messages back to the sender.
+
+function on_message(self, message_id, message, sender)
+	msg.post(sender, "echo", message)
+end
