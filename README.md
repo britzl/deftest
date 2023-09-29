@@ -13,38 +13,42 @@ This project shows one way of running unit tests in Defold using the [Telescope]
 ## Usage
 DefTest is provided as a Defold library project for easy integration in your own project. Add the following line to your project dependencies in game.project:
 
-	https://github.com/britzl/deftest/archive/master.zip
+```lua
+https://github.com/britzl/deftest/archive/master.zip
+```
 
-```Lua
 It is recommended to run your unit tests from its own collection, set as the bootstrap collection in game.project. Add a game object and a script to the collection and use the script to set up your tests. An example:
 
-	local deftest = require "deftest.deftest"
-	local some_tests = require "test.some_tests"
-	local other_tests = require "test.other_tests"
+```lua
+local deftest = require "deftest.deftest"
+local some_tests = require "test.some_tests"
+local other_tests = require "test.other_tests"
 
-	function init(self)
-		deftest.add(some_tests)
-		deftest.add(other_tests)
-		deftest.run()
-	end
+function init(self)
+    deftest.add(some_tests)
+    deftest.add(other_tests)
+    deftest.run()
+end
+```
 
 And a Lua file containing some tests:
 
-	return function()
-		describe("Some tests", function()
-			before(function()
-				-- this function will be run before each test
-			end)
+```lua
+return function()
+    describe("Some tests", function()
+        before(function()
+            -- this function will be run before each test
+        end)
 
-			after(function()
-				-- this function will be run after each test
-			end)
+        after(function()
+            -- this function will be run after each test
+        end)
 
-			test("Basic arithmetic", function()
-				assert(1 + 1 == 2)
-			end)
-		end)
-	end
+        test("Basic arithmetic", function()
+            assert(1 + 1 == 2)
+        end)
+    end)
+end
 ```
 
 More examples of the Telescope test syntax can be seen in [telescope_syntax.lua](https://github.com/britzl/deftest/blob/master/test/telescope_syntax.lua) and a full example of how to setup and run tests can be seen [in the test folder](https://github.com/britzl/deftest/tree/master/test).
@@ -101,15 +105,15 @@ For an up-to-date version of the script and steps needed to run on Travis-CI ple
 You can specify a string pattern (using normal Lua pattern matching) that will be matched against the test names to filter which tests to run:
 
 ```Lua
-	-- only run tests containing 'foobar'
-	deftest.run({ pattern = "foobar" })
+-- only run tests containing 'foobar'
+deftest.run({ pattern = "foobar" })
 ```
 
 ### Code coverage
 DefTest can collect code coverage stats to measure how much of your code that is tested. Code coverage data is collected using [LuaCov](https://github.com/keplerproject/luacov), specifically code [from a LuaCov fork](https://github.com/britzl/luacov) where the code has undergone some minor alterations to work well with Defold. Code coverage is not automatically collected. You can enable code coverage collection like this:
 
 ```Lua
-    deftest.run({ coverage = { enabled = true } })
+deftest.run({ coverage = { enabled = true } })
 ```
 
 When the tests have completed a code coverage report will be generated to `luacov.report.out` and raw stats to `luacov.stats.out`. The report can be uploaded directly to a service such as [codecov.io](https://codecov.io) or the stats can be formatted into a report format accepted by other services such as [coveralls.io](http://coveralls.io/).
