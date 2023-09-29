@@ -1,3 +1,6 @@
+# Usage:
+# (Linux) ./.test/run.sh
+# (MacOS) ./.test/run.sh "x86_64-macos"
 
 if [ $# -eq 0 ]; then
 	PLATFORM="x86_64-linux"
