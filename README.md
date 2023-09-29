@@ -18,6 +18,7 @@ https://github.com/britzl/deftest/archive/master.zip
 ```
 
 It is recommended to run your unit tests from its own collection, set as the bootstrap collection in game.project. Add a game object and a script to the collection and use the script to set up your tests. An example:
+
 ```lua
 local deftest = require "deftest.deftest"
 local some_tests = require "test.some_tests"
