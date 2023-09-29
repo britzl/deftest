@@ -11,15 +11,15 @@ echo "${PLATFORM}"
 SHA1=$(curl -s http://d.defold.com/stable/info.json | sed 's/.*sha1": "\(.*\)".*/\1/')
 echo "Using Defold dmengine_headless version ${SHA1}"
 
-DMENGINE_URL="http://d.defold.com/archive/stable/${SHA1}/engine/${PLATFORM}/dmengine_headless"
-BOB_URL="http://d.defold.com/archive/stable/${SHA1}/bob/bob.jar"
+DMENGINE_URL="http://d.defold.com/archive/${SHA1}/engine/${PLATFORM}/dmengine_headless"
+BOB_URL="http://d.defold.com/archive/${SHA1}/bob/bob.jar"
 
 echo "Downloading ${DMENGINE_URL}"
-curl -o dmengine_headless ${DMENGINE_URL}
+curl -L -o dmengine_headless ${DMENGINE_URL}
 chmod +x dmengine_headless
 
 echo "Downloading ${BOB_URL}"
-curl -o bob.jar ${BOB_URL}
+curl -L -o bob.jar ${BOB_URL}
 
 echo "Running bob.jar"
 java -jar bob.jar --debug build
