@@ -17,9 +17,11 @@ echo "Using Defold dmengine_headless version ${SHA1}"
 DMENGINE_URL="http://d.defold.com/archive/${SHA1}/engine/${PLATFORM}/dmengine_headless"
 BOB_URL="http://d.defold.com/archive/${SHA1}/bob/bob.jar"
 
-echo "Downloading ${DMENGINE_URL}"
-curl -L -o dmengine_headless ${DMENGINE_URL}
-chmod +x dmengine_headless
+if [[ ! -f dmengine_headless ]]; then
+	echo "Downloading ${DMENGINE_URL}"
+	curl -L -o dmengine_headless ${DMENGINE_URL}
+	chmod +x dmengine_headlessf
+fi	
 
 if [[ ! -f bob.jar ]]; then
 	echo "Downloading ${BOB_URL}"
