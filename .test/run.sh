@@ -25,7 +25,7 @@ echo "Downloading ${BOB_URL}"
 curl -L -o bob.jar ${BOB_URL}
 
 echo "Running bob.jar"
-java -jar bob.jar --debug build
+java -jar bob.jar --variant debug build
 
 echo "Starting dmengine_headless"
 ./dmengine_headless
