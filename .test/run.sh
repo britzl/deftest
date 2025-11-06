@@ -21,8 +21,10 @@ echo "Downloading ${DMENGINE_URL}"
 curl -L -o dmengine_headless ${DMENGINE_URL}
 chmod +x dmengine_headless
 
-echo "Downloading ${BOB_URL}"
-curl -L -o bob.jar ${BOB_URL}
+if [[ ! -f bob.jar ]]; then
+	echo "Downloading ${BOB_URL}"
+	curl -L -o bob.jar ${BOB_URL}
+fi
 
 echo "Running bob.jar"
 java -jar bob.jar --variant debug build
