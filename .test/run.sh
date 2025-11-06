@@ -20,7 +20,7 @@ BOB_URL="http://d.defold.com/archive/${SHA1}/bob/bob.jar"
 if [[ ! -f dmengine_headless ]]; then
 	echo "Downloading ${DMENGINE_URL}"
 	curl -L -o dmengine_headless ${DMENGINE_URL}
-	chmod +x dmengine_headlessf
+	chmod +x dmengine_headless
 fi	
 
 if [[ ! -f bob.jar ]]; then
