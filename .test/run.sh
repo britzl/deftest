@@ -29,7 +29,7 @@ if [[ ! -f bob.jar ]]; then
 fi
 
 echo "Running bob.jar"
-java -jar bob.jar --variant debug build
+java -jar bob.jar --variant=debug build
 
 echo "Starting dmengine_headless"
 ./dmengine_headless
