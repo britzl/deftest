@@ -97,7 +97,7 @@ The tests for this project can either be executed from within Defold or through 
 
 ### Bootstrap
 It is reccomended to use a testing collection, separate from your main collection, as we saw earlier. `deftest.run()` will terminate the currently running process when it is finished. You may not want to change the bootstrap in game.project every time unit tests are run. There is an easy solution! Defold has settings files which have the same format as game.project, and can be run separatly using [bob](https://defold.com/manuals/bob/). Create a file called `testing.settings` somewhere in your testing directory. Open `testing.settings` in Defold and set the `main_collection` attribute to the collection that has the tests. Use an IDE or text editor to open `run.sh` and change line 32 to
-```
+```Shell
 java -jar bob.jar --variant=headless --settings path/to/testing.setting clean build
 ```
 This will tell bob to ignore the main_collection in game.project and use whatever is in `testing.settings` instead. Now running `run.sh` will run deftest without changing game.project, which can stay as whatever it usually is.
