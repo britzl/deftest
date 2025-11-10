@@ -92,7 +92,30 @@ DefTest adds these additional asserts:
 ## Running tests from a CI system
 The real power of unit tests is as we have learned when the tests can be automated and run for every change made to the code. There are many CI systems available and this project will also show how to integrate with some of the more popular CI systems out there. The main idea is to configure a physical or virtual machine so that tests can be run frequently and with predictable results every time. Once the configuration of the machine is complete a script of some kind executes the tests and depending on the outcome different actions are taken. Failed tests could perhaps trigger e-mail notifications to team members or a dashboard display to light up while successful tests could trigger a build of binaries based on the tested code.
 
-The tests for this project can either be executed from within Defold or through the [run.sh](https://github.com/britzl/deftest/blob/master/.test/run.sh) script from the command line. The script will download the latest headless version of the Defold engine and the command line build tool (bob.jar), build the project and run the tests.
+The tests for this project can either be executed from within Defold or through the [run.sh](https://github.com/britzl/deftest/blob/master/.test/run.sh) script from the command line. *Run the script from the main project folder in whatever shell you use or it may not work!* The script will download the latest headless (no graphics/sound) version of the Defold engine and the command line build tool (bob.jar), build the project and run the tests.
+
+
+### Bootstrap
+It is reccomended to use a testing collection, separate from your main collection, as we saw earlier. `deftest.run()` will terminate the currently running process when it is finished. You may not want to change the bootstrap in game.project every time unit tests are run. There is an easy solution! Defold has settings files which have the same format as game.project, and can be run separatly using [bob](https://defold.com/manuals/bob/). Create a file called `testing.settings` somewhere in your testing directory. Open `testing.settings` in Defold and set the `main_collection` attribute to the collection that has the tests. Use an IDE or text editor to open `run.sh` and change line 32 to
+```Shell
+java -jar bob.jar --variant=headless --settings path/to/testing.setting clean build
+```
+This will tell bob to ignore the main_collection in game.project and use whatever is in `testing.settings` instead. Now running `run.sh` will run deftest without changing game.project, which can stay as whatever it usually is.
+
+### VScode
+Even furhter automation is possible if you use VScode as your main code editor. Using launch options, `run.sh` can be executed with the click of a button. Open (or create) .vscode/launch.json and add the following entry:
+```Json
+{
+    "name": "Unit tests",
+    "type": "lua-local",
+    "request": "launch",
+    "verbose": true,
+    "program": {
+        "command": "${workspaceFolder}/path/to/run.sh" #if your run.sh is somewhere else change this
+    }
+}
+```
+Save the file, and reload the current window. Under 'Run and Debug' there should now be an option to run 'Unit tests'. The output of these tests will be printed to the debig console in VScode. Doing this does not conflict with extensions like [Defold Kit](https://marketplace.visualstudio.com/items?itemName=astronachos.defold) or [Defold Buddy](https://marketplace.visualstudio.com/items?itemName=mikatuo.vscode-defold-ide), so long as launch.json is formatted correctly.
 
 ### Using Travis-CI
 The tests in this project are run on [Travis-CI](https://travis-ci.org/britzl/deftest). The configuration can be seen in the [.travis.yml](https://github.com/britzl/deftest/blob/master/.travis.yml) file while the bulk of the work is done in the run.sh script.
