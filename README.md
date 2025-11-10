@@ -103,7 +103,7 @@ java -jar bob.jar --variant=headless --settings path/to/testing.setting clean bu
 This will tell bob to ignore the main_collection in game.project and use whatever is in `testing.settings` instead. Now running `run.sh` will run deftest without changing game.project, which can stay as whatever it usually is.
 
 ### VScode
-Even furhter automation is possible if you use VScode as your main code editor. Using launch options, `run.sh` can be executed with the click of a button. Open (or create) .vscode/launch.json and add the following entry:
+Even further automation is possible if you use VScode as your main code editor. Using launch options, `run.sh` can be executed with the click of a button. Open (or create) .vscode/launch.json and add the following entry:
 ```Json
 {
     "name": "Unit tests",
