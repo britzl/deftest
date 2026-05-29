@@ -102,9 +102,14 @@ local function get_font(node)
 	return node.font
 end
 
-local function get_text_metrics(font, text, width, line_breaks, leading, tracking)
+local function get_font_resource(font)
+	return font
+end
+
+local function get_text_metrics(font, text, options)
+	options = options or {}
 	return {
-		width = width,
+		width = options.width or 0,
 		height = 10,
 		max_ascent = 8,
 		max_descent = 2,
@@ -216,6 +221,7 @@ end
 
 function M.mock()
 	mock.mock(gui)
+	mock.mock(resource)
 	gui.get_node.replace(get_node)
 	gui.get_id.replace(get_id)
 	gui.set_id.replace(set_id)
@@ -230,7 +236,8 @@ function M.mock()
 	gui.set_parent.replace(set_parent)
 
 	gui.get_font.replace(get_font)
-	gui.get_text_metrics.replace(get_text_metrics)
+	gui.get_font_resource.replace(get_font_resource)
+	resource.get_text_metrics.replace(get_text_metrics)
 
 	gui.reset_keyboard.replace(function() end)
 	gui.show_keyboard.replace(function() end)
@@ -257,11 +264,12 @@ function M.mock()
 	gui.clone.replace(clone)
 
 	gui.animate.replace(animate)
-	gui.cancel_animation.replace(cancel_animation)
+	gui.cancel_animations.replace(cancel_animation)
 end
 
 function M.unmock()
 	mock.unmock(gui)
+	mock.unmock(resource)
 	nodes = {}
 end
 

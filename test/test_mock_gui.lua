@@ -165,7 +165,7 @@ return function()
 			local node = gui.new_box_node(vmath.vector3(10, 10, 0), vmath.vector3(100, 100, 0))
 			local to = vmath.vector3(50, 80, 0)
 			gui.animate(node, gui.PROP_POSITION, to, gui.EASING_LINEAR, 1)
-			gui.cancel_animation(node, gui.PROP_POSITION)
+			gui.cancel_animations(node, gui.PROP_POSITION)
 			assert(node.position ~= to)
 		end)
 				
