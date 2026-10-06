@@ -212,7 +212,7 @@ local function animate(node, property, to, easing, duration, delay, callback, pl
 	node.animations[property] = timer_id
 end
 
-local function cancel_animation(node, property)
+local function cancel_animations(node, property)
 	if node.animations[property] then
 		timer.cancel(node.animations[property])
 		node.animations[property] = nil
@@ -264,7 +264,7 @@ function M.mock()
 	gui.clone.replace(clone)
 
 	gui.animate.replace(animate)
-	gui.cancel_animations.replace(cancel_animation)
+	gui.cancel_animations.replace(cancel_animations)
 end
 
 function M.unmock()
